@@ -2127,11 +2127,11 @@ function allTracks() {
   let response = spotifyApi.getMyTopTracks(limit = 50);
   let trackList = [];
   response.then(function(value) {
-     for (let i = 0; i < 50; i++)
+     for (let i = 0; i < value.items.length; i++)
      {
-       const ID = value.items[i].id; 
-       const NAME = value.items[i].name; 
-       const ALBUM_ID = value.items[i].album.id;
+       const ID = value.items[i].track.id; 
+       const NAME = value.items[i].track.name; 
+       const ALBUM_ID = value.items[i].track.album.id;
        let track_info = [ID, NAME];
        let ALBUM = spotifyApi.getAlbum(ALBUM_ID);
        ALBUM.then(function(value) {
@@ -2148,11 +2148,11 @@ function allTracks() {
   {
     let response2 = spotifyApi.getMySavedTracks(limit = 50, offset = j*0)
     response2.then(function(value) {
-      for (let k = 0; k < 50; k++)
+      for (let k = 0; k < value.items.length; k++)
       {
-        const ID = value.items[k].id; 
-        const NAME = value.items[k].name; 
-        const ALBUM_ID = value.items[k].album.id;
+        const ID = value.items[k].track.id; 
+        const NAME = value.items[k].track.name; 
+        const ALBUM_ID = value.items[k].track.album.id;
         let track_info = [ID, NAME];
         let ALBUM = spotifyApi.getAlbum(ALBUM_ID);
         ALBUM.then(function(value) {
