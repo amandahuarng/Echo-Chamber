@@ -44,19 +44,6 @@ function getToken(req, res){
 
 
 
-
-/*
-$.ajax({
-  url: 'https://api.spotify.com/v1/me',
-  headers: {
-      'Authorization': 'Bearer ' + accessToken
-  },
-  success: function(response) {
-      ...
-  }
-});
-*/
-
 function options() {
   // Visualization options //
 
