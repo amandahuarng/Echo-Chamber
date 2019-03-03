@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Mood Playlist Generator</title>
+    <meta name = "description" content = "Mood Playlist Generator!">
+    <link id = "favicon" rel = "icon" href = "https://glitch.com/edit/favicon-app.ico" type="image/x-icon">
+    <meta charset = "utf-8">
+    <meta http-equiv = "X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link href="https://sp-bootstrap.global.ssl.fastly.net/8.0.0/sp-bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="/style.css">
+    <script src="https://code.jquery.com/jquery-2.2.1.min.js"
+            integrity="sha256-gvQgAFzTH6trSrAWoH1iPo9Xc96QxSZ3feW6kem+O00="
+            crossorigin="anonymous"></script>
+    <script src="/server.js"></script>
+    <script src="/gauge.js"></script>
+    <script src="/app.js"></script>
+  </head>
+  <style>
+    body{
+      color:lightgreen;
+      background-color: #000000;
+    }
+    p{
+      color:white;
+    }
+    h4{
+      color:white;
+    }
+    input{
+      color:black;
+    }
+  </style>
+  <body>
+    <header>
+      <h1>
+        Current Mood Playlist Generator
+      </h1>
+      <p>
+        Use audio features to determine the "mood" of a given track. Audio features are a method of quantifying the aspects of different songs in order to better
+        categorize them and use them to bring desired music to the user.
+      </p>
+      <p>
+        The audio features include valence, acousticness, danceability, energy, instrumentalness, liveness,
+        and speechiness, duration time, tempo, and key.
+      </p>
+      <p>
+        To find these audio features, we use the Spotify API's <a href= "https://developer.spotify.com/web-api/get-several-audio-features/">Get Audio Features for Several Tracks</a> endpoint.
+        <br/>
+      </p>
+    </header>
+
+    <main>
+      <!--h3> What have you been listening to? </h3-->
+      <form action = "audiofeatures.html">
+        <!--ul>
+          <li>
+            <input type="text" maxLength="150" placeholder="Artist Name">
+          </li>
+          <li>
+            <input type="text" maxLength="150" placeholder="Song Name">
+          </li>
+        </ul-->
+
+        <button class = "btn btn-sm btn-tangerine" id = "audiofeatures" type = "submit">See Audio Features</button>
+
+      </form>
+
+      <button class ="btn btn-sm btn-tangerine" id= "authorizeButton" onclick = handleRedirect()>Authorization</button>
+
+    </main>
+  </body>
+</html>
