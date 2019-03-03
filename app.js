@@ -1,3 +1,5 @@
+import SpotifyWebApi from '/.spotify-web-api.js';
+
 // Authorization request
 const hash = window.location.hash
   .substring(1)
@@ -27,7 +29,7 @@ function handleRedirect(req, res){
 };
 
 
-var SpotifyWebApi = require('spotify-web-api-js');
+//var SpotifyWebApi = ('spotify-web-api-js');
 var spotifyApi = new SpotifyWebApi({
   clientId: '6f90aae762534341aac911e306e7fc91',
   scopes: "user-read-recently-played user-library-read playlist-read-private playlist-read-collaborative user-top-read playlist-modify-public"
