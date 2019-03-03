@@ -114,7 +114,7 @@ app.get("/audiofeatures", function (request, response) {
     var speechinessValues = audioFeatures.body.audio_features.map(function(t) { return t ? t.speechiness : null; }).filter(e => e);
     response.json({ track: { name: trackName, id: trackId }, valence: valenceValues, acousticness: acousticnessValues,
     danceability: danceabilityValues, energy: energyValues, instrumentalness: instrumentalnessValues,
-    liveness: livenessValues, speechiness: speechinessValues);
+    liveness: livenessValues, speechiness: speechinessValues});
   })
   .catch(function(err) {
     console.log(err);
