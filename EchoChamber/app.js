@@ -1,6 +1,6 @@
 const authEndpoint = 'https://accounts.spotify.com/authorize';
 
-
+// HELOOOOOO
 // Replace with your app's client ID, redirect URI and desired scopes
 const clientID = '6f90aae762534341aac911e306e7fc91';
 const redirectURI = 'http://localhost:8888'; //our browser
