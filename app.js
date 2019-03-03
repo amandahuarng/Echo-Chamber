@@ -37,7 +37,7 @@ function getToken(){
       hash = initial[parts[0]];
     }
   })
-  _token = hash;
+  _token = hash.access_token;
   console.log(_token);
 };
 
