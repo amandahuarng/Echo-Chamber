@@ -2081,9 +2081,9 @@ function allTracks() {
     response2.then(function(value) {
       for (let k = 0; k < 50; k++)
       {
-        const ID = value.items[i].id; 
-        const NAME = value.items[i].name; 
-        const ALBUM_ID = value.items[i].album.id;
+        const ID = value.items[k].id; 
+        const NAME = value.items[k].name; 
+        const ALBUM_ID = value.items[k].album.id;
         let track_info = [ID, NAME];
         let ALBUM = spotifyApi.getAlbum(ALBUM_ID);
         ALBUM.then(function(value) {
@@ -2096,8 +2096,11 @@ function allTracks() {
       }
     });
   } 
+};
 
-
+function history()
+{
+  let response = spotifyApi.getMyRecentlyPlayedTracks(limit = 50);
 
 };
 
