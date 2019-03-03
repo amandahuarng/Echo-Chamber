@@ -100,4 +100,6 @@ app.listen(0, function () {
 });
 */
 
-app.listen(process.env.PORT || 5000);
+app.listen(process.env.PORT || 5000, function () {
+  console.log("port is listening");
+});
