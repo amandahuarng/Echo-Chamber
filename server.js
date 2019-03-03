@@ -2,8 +2,8 @@
 // where your node app starts
 
 // init project
-var express = require('express');
-var app = express();
+//var express = require('express');
+//var app = express();
 
 
 
@@ -39,7 +39,7 @@ function authorize() {
 
 
 // http://expressjs.com/en/starter/static-files.html
-app.use(express.static('public'));
+//app.use(express.static('public'));
 
 // http://expressjs.com/en/starter/basic-routing.html
 /*
