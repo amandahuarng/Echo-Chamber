@@ -18,9 +18,8 @@ const authEndpoint = 'https://accounts.spotify.com/authorize';
 
 // Replace with your app's client ID, redirect URI and desired scopes
 const clientID = 'cc490ff74fbd4a84b6765221eee81f01';
-const redirectURI = 'https://google.com'; //our browser
+const redirectURI = 'https://na31.org'; //our browser
 const scopes = ['user-read-recently-played', 'user-library-read', 'playlist-read-private', 'playlist-read-collaborative', 'user-top-read', 'playlist-modify-public'];
-const token = _token;
 
 
 function handleRedirect(req, res){
@@ -30,6 +29,18 @@ function handleRedirect(req, res){
   window.location.href = authURL;
   console.log(authURL);
 };
+
+
+if (_token != null){
+  redirectToLocal();
+}
+
+function redirectToLocal(req, res){
+  const redirectURL = '/Users/amanda/Desktop/Echo-Chamber/newplaylist.html'
+  window.location.href = redirectURL;
+  console.log(redirectURL);
+};
+
 /*
 $.ajax({
   url: 'https://api.spotify.com/v1/me',
