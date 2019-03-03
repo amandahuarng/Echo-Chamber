@@ -29,8 +29,11 @@ function handleRedirect(req, res){
 
 
 function getToken(req, res){
+  console.log("in function");
+  window.alert("IN FUNCTION");
   ourhash = window.location.hash.substring(1).split('&').reduce(function(initial, item)
   {
+    console.log(ourhash);
     if (item) {
       var parts = item.split('=');
       console.log(parts + ' 123');
