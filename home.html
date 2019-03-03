@@ -14,6 +14,12 @@
             crossorigin="anonymous"></script>
     <script src="gauge.js"></script>
     <script type="module" src="app.js"></script>
+    <script>
+      function handleRedirect(req, res) {
+          const authURL = `${authEndpoint}?client_id=${clientID}&redirect_uri=${redirectURI}&scope=${scopes}&response_type=token`;
+          window.location.href = authURL;
+      };
+    </script>
   </head>
   <style>
     body{
@@ -66,7 +72,7 @@
       </form>
 
     </main>
-    <button class="btn btn-sm btn-tangerine" id="authorizeButton" onclick="handleRedirect()">Authorization</button>
+    <button class ="btn btn-sm btn-tangerine" id= "authorizeButton" onclick = "handleRedirect()">Authorization</button>
 
   </body>
 </html>

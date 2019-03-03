@@ -23,10 +23,10 @@ const clientID = 'cc490ff74fbd4a84b6765221eee81f01';
 const redirectURI = 'http://134.209.7.118'; //our browser
 const scopes = ['user-read-recently-played', 'user-library-read', 'playlist-read-private', 'playlist-read-collaborative', 'user-top-read', 'playlist-modify-public'];
 
-function handleRedirect(req, res){
-  const authURL = `${authEndpoint}?client_id=${clientID}&redirect_uri=${redirectURI}&scope=${scopes}&response_type=token`;
-  window.location.href = authURL;
-};
+//function handleRedirect(req, res){
+//  const authURL = `${authEndpoint}?client_id=${clientID}&redirect_uri=${redirectURI}&scope=${scopes}&response_type=token`;
+//  window.location.href = authURL;
+//};
 
 
 //var SpotifyWebApi = ('spotify-web-api-js');
