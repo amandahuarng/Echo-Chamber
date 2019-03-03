@@ -27,7 +27,7 @@ function handleRedirect(req, res){
 };
 
 
-var SpotifyWebApi = require('spotify-web-api-node');
+var SpotifyWebApi = require('spotify-web-api-js');
 var spotifyApi = new SpotifyWebApi({
   clientId: '6f90aae762534341aac911e306e7fc91',
   scopes: "user-read-recently-played user-library-read playlist-read-private playlist-read-collaborative user-top-read playlist-modify-public"
