@@ -6,8 +6,6 @@ var express = require('express');
 var app = express();
 
 
-
-
 // SPOTIFY AUTHENTICATION
 // https://github.com/thelinmichael/spotify-web-api-node#client-credential-flow
 // ------------------------------------------- //
