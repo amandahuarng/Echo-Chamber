@@ -34,6 +34,8 @@ function getToken(url){
   {
     if (item) {
       var parts = item.split('=');
+      console.log("parts: " + parts);
+      console.log("initial: " + initial);
       initial[parts[0]] = decodeURIComponent(parts[1]);
       ourhash = initial;
     }
