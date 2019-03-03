@@ -2157,7 +2157,7 @@ function allTracks() {
         track_info.push([ID, NAME, ALBUM_ID]);
       }
     });
-      for (let m = 0; m < value.items.length; m++)
+      for (let m = 0; m < track_info.length; m++)
       {
         let ALBUM = spotifyApi.getAlbum(track_info[m][2]);
         ALBUM.then(function(value) {
