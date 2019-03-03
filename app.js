@@ -33,13 +33,15 @@ function getToken(req, res){
   {
     if (item) {
       var parts = item.split('=');
+      console.log(parts + ' 123');
+      console.log(initial + ' initial');
       initial[parts[0]] = decodeURIComponent(parts[1]);
       ourhash = initial;
     }
   })
   _token = ourhash;
-  console.log(_token);
 };
+
 
 
 
