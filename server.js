@@ -94,6 +94,6 @@ app.get("/audiofeatures", function (request, response) {
 app.get('/', (req, res) => res.send('Hello World!'))
 
 // listen for requests :)
-app.listen(8888, function () {
-  console.log('Your app is listening on port 8888');
+app.listen(0, function () {
+  console.log('Your app is listening on port 0');
 });
