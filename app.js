@@ -22,12 +22,14 @@ const redirectURI = 'http://134.209.7.118/Echo-Chamber/newplaylist.html'; //our 
 const scopes = ['user-read-recently-played', 'user-library-read', 'playlist-read-private', 'playlist-read-collaborative', 'user-top-read', 'playlist-modify-public'];
 
 function handleRedirect(req, res){
-  //changed ${clientID} to ${req}
-  //const authUrl = "/Users/amanda/Desktop/Echo-Chamber/newplaylist.html";
   const authURL = `${authEndpoint}?client_id=${clientID}&redirect_uri=${redirectURI}&scope=${scopes}&response_type=token`;
   window.location.href = authURL;
 };
 
+
+function getToken(){
+
+};
 
 if (window.location.href.splice(0,15) == redirectURI){
     hash =window.location.hash
@@ -40,17 +42,8 @@ if (window.location.href.splice(0,15) == redirectURI){
     }
    });
    _token = hash.access_token;
-   
-   if (_token != null){
-       redirectToLocal();
-   }
 };
   
-function redirectToLocal(){
-  const redirectURL = '/localhost:5000/newplaylist.html';
-  window.location.href = redirectURL;
-  console.log(redirectURL);
-};
 
 /*
 $.ajax({
