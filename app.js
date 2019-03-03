@@ -33,14 +33,11 @@ function getToken(url){
   ourhash = url.substring(1).split('&').reduce(function(initial, item)
   {
     if (item) {
-      var parts = item.split('=');
-      console.log("parts: " + parts);
-      console.log("initial: " + initial);
-      initial[parts[0]] = decodeURIComponent(parts[1]);
-      ourhash = initial;
+      if (initial != null){
+        _token = initial.splice(13, initial.length);
+      }
     }
   })
-  _token = ourhash.access_token;
 };
 
 
