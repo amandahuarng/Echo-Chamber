@@ -2160,7 +2160,7 @@ function allTracks() {
         });
         let af = spotifyApi.getAudioFeaturesForTrack(ID);
         af.then(function(feats) {
-        trackList.push([track_info].concat(convertAF(af)));
+          trackList.push([track_info].concat(convertAF(feats)));
        });
       }
     });
@@ -2180,7 +2180,7 @@ function history()
   });
   let response2 = spotifyApi.getAudioFeaturesForTracks(track_ids);
   response2.then(function(value) {
-    for (let j = 0; j < value.items.length; j++)
+    for (let j = 0; j < track_ids.length; j++)
     {
       afList.push(convertAF(value[j]));
     }
