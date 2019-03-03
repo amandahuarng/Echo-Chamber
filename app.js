@@ -15,13 +15,13 @@ window.location.hash = '';
 // Set token
 let _token = hash.access_token;
 
-const authEndpoint = 'https://accounts.spotify.com/authorize';
+//const authEndpoint = 'https://accounts.spotify.com/authorize';
 
 // Replace with your app's client ID, redirect URI and desired scopes
-const clientID = 'cc490ff74fbd4a84b6765221eee81f01';
+//const clientID = 'cc490ff74fbd4a84b6765221eee81f01';
 //const redirectURI = 'https://na31.org';
-const redirectURI = 'http://134.209.7.118'; //our browser
-const scopes = ['user-read-recently-played', 'user-library-read', 'playlist-read-private', 'playlist-read-collaborative', 'user-top-read', 'playlist-modify-public'];
+//const redirectURI = 'http://134.209.7.118'; //our browser
+//const scopes = ['user-read-recently-played', 'user-library-read', 'playlist-read-private', 'playlist-read-collaborative', 'user-top-read', 'playlist-modify-public'];
 
 //function handleRedirect(req, res){
 //  const authURL = `${authEndpoint}?client_id=${clientID}&redirect_uri=${redirectURI}&scope=${scopes}&response_type=token`;
