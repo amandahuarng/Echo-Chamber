@@ -1,6 +1,3 @@
-var app = express();
-var run = require('./server.js');
-
 // Set token
 let _token = hash.access_token;
 
