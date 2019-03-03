@@ -27,6 +27,12 @@ function handleRedirect(req, res){
 };
 
 
+var SpotifyWebApi = require('spotify-web-api-node');
+var spotifyApi = new SpotifyWebApi({
+  clientId: '6f90aae762534341aac911e306e7fc91',
+  scopes: "user-read-recently-played user-library-read playlist-read-private playlist-read-collaborative user-top-read playlist-modify-public"
+});
+
 function getToken(url){
   console.log("in function");
   ourhash = url.substring(1).split('&').reduce(function(initial, item)
@@ -34,10 +40,13 @@ function getToken(url){
     if (item) {
       if (initial != null){
         _token = initial.slice(13, initial.length);
+        spotifyApi.setAccessToken(_token);
       }
     }
   })
 };
+
+
 
 function options() {
   // Visualization options //
@@ -268,14 +277,6 @@ function options() {
 };
 
 options();
-
-var SpotifyWebApi = require('spotify-web-api-node');
-var spotifyApi = new SpotifyWebApi({
-  clientId: '6f90aae762534341aac911e306e7fc91',
-  scopes: "user-read-recently-played user-library-read playlist-read-private playlist-read-collaborative user-top-read playlist-modify-public",
-  setAccessToken: _token
-});
-
 
 
 // SPOTIFY API CALLS
