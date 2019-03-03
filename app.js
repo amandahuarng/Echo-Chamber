@@ -2191,6 +2191,7 @@ function history()
       afList.push(convertAF(value));
     });
   }
+  console.log(afList);
   return afList;
 };
 
