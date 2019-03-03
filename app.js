@@ -28,9 +28,9 @@ function handleRedirect(req, res){
 };
 
 
-function getToken(req, res){
+function getToken(url){
   console.log("in function");
-  ourhash = window.location.hash.substring(1).split('&').reduce(function(initial, item)
+  ourhash = url.substring(1).split('&').reduce(function(initial, item)
   {
     console.log(ourhash);
     if (item) {
