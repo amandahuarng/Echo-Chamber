@@ -29,22 +29,18 @@ function handleRedirect(req, res){
 
 
 function getToken(){
-
-};
-
-if (window.location.href.splice(0,15) == redirectURI){
-    hash =window.location.hash
-    .substring(1)
-    .split('&')
-    .reduce(function (initial, item) {
+  hash = window.location.hash.substring(1).split('&').reduce(function(initial, item)
+  {
     if (item) {
       var parts = item.split('=');
       initial[parts[0]] = decodeURIComponent(parts[1]);
+      hash = initial;
     }
-   });
-   _token = hash.access_token;
+  })
+  _token = hash.access_token;
 };
-  
+
+
 
 /*
 $.ajax({
