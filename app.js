@@ -2178,7 +2178,7 @@ function history()
       track_ids.push(data.items[i].id);
     }
   });
-  let response2 = spotifyApi.getAudioFeaturesForTracks(tracks_id);
+  let response2 = spotifyApi.getAudioFeaturesForTracks(track_ids);
   response2.then(function(value) {
     for (let j = 0; j < 50; j++)
     {
