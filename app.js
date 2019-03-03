@@ -2146,6 +2146,7 @@ function allTracks() {
 
   for (let j = 0; j < 4; j++)
   {
+    track_info = [];
     let response2 = spotifyApi.getMySavedTracks(limit = 50, offset = (j*0))
     response2.then(function(value) {
       for (let k = 0; k < value.items.length; k++)
@@ -2153,19 +2154,23 @@ function allTracks() {
         const ID = value.items[k].id; 
         const NAME = value.items[k].name; 
         const ALBUM_ID = value.items[k].track.album.id;
-        let track_info = [ID, NAME];
-        let ALBUM = spotifyApi.getAlbum(ALBUM_ID);
+        track_info.push([ID, NAME, ALBUM_ID]);
+      }
+    });
+      for (let m = 0; m < value.items.length; m++)
+      {
+        let ALBUM = spotifyApi.getAlbum(track_info[m][2]);
         ALBUM.then(function(value) {
-          track_info.concat(value.images[0].url);
+          track_info[m][2] = value.images[0].url;
         });
         let af = spotifyApi.getAudioFeaturesForTrack(ID);
         af.then(function(value) {
           console.log(value)
-          trackList.push([track_info].concat(convertAF(value)));
-       });
+          trackList.push([track_info[m]].concat(convertAF(value)));
+        });
       }
-    });
   } 
+  return trackList;
 };
 
 function history()
