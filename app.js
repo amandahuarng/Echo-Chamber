@@ -2129,9 +2129,9 @@ function allTracks() {
   response.then(function(value) {
      for (let i = 0; i < value.items.length; i++)
      {
-       const ID = value.items[i].track.id; 
-       const NAME = value.items[i].track.name; 
-       const ALBUM_ID = value.items[i].track.album.id;
+       const ID = value.items[i].id; 
+       const NAME = value.items[i].name; 
+       const ALBUM_ID = value.items[i].album.id;
        let track_info = [ID, NAME];
        let ALBUM = spotifyApi.getAlbum(ALBUM_ID);
        ALBUM.then(function(value) {
@@ -2150,9 +2150,9 @@ function allTracks() {
     response2.then(function(value) {
       for (let k = 0; k < value.items.length; k++)
       {
-        const ID = value.items[k].track.id; 
-        const NAME = value.items[k].track.name; 
-        const ALBUM_ID = value.items[k].track.album.id;
+        const ID = value.items[k].id; 
+        const NAME = value.items[k].name; 
+        const ALBUM_ID = value.items[k].album.id;
         let track_info = [ID, NAME];
         let ALBUM = spotifyApi.getAlbum(ALBUM_ID);
         ALBUM.then(function(value) {
@@ -2172,10 +2172,10 @@ function history()
   track_ids = [];
   afList = [];
   let response = spotifyApi.getMyRecentlyPlayedTracks(limit = 50);
-  response.then(function(data) {
+  response.then(function(value) {
     for (let i = 0; i < 50; i++)
     {
-      track_ids.push(data.items[i].id);
+      track_ids.push(value.items[i].id);
     }
   });
   let response2 = spotifyApi.getAudioFeaturesForTracks(track_ids);
