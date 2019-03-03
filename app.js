@@ -41,7 +41,6 @@ function getToken(url){
 };
 
 
-
 function options() {
   // Visualization options //
 
@@ -262,4 +261,4 @@ function options() {
       });
     });
   });
-}
+};
