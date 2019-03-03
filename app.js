@@ -32,11 +32,8 @@ function getToken(url){
   console.log("in function");
   ourhash = url.substring(1).split('&').reduce(function(initial, item)
   {
-    console.log(ourhash);
     if (item) {
       var parts = item.split('=');
-      console.log(parts + ' 123');
-      console.log(initial + ' initial');
       initial[parts[0]] = decodeURIComponent(parts[1]);
       ourhash = initial;
     }
