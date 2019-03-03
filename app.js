@@ -33,7 +33,7 @@ function getToken(url){
   {
     if (item) {
       if (initial != null){
-        _token = initial.splice(13, initial.length);
+        _token = initial.slice(13, initial.length);
       }
     }
   })
