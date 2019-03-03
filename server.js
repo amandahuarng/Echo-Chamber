@@ -52,7 +52,7 @@ app.get("/", function (request, response) {
 
 // SPOTIFY API CALLS
 // -------------------------------------------------------------------------------------------------------- //
-
+/*
 app.get("/audiofeatures", function (request, response) {
   var track = request.query.track;
   var trackName, trackId;
@@ -90,7 +90,7 @@ app.get("/audiofeatures", function (request, response) {
 
 // -------------------------------------------------------------------------------------------------------- //
 
-
+*/
 app.get('/', (req, res) => res.send('Hello World!'))
 
 // listen for requests :)
