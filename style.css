@@ -1,0 +1,26 @@
+* {
+  box-sizing: border-box;
+}
+
+body {
+  background-color: #000000;
+  padding: 5vh 5vw;
+}
+
+p {
+  max-width: 800px;
+}
+
+li {
+  margin-bottom: 5px;
+}
+
+footer {
+  margin-top: 50px;
+  padding-top: 25px;
+  border-top: 1px solid lightgrey;
+}
+
+.nicejob {
+  text-decoration: line-through;
+}
