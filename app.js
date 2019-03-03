@@ -34,10 +34,10 @@ function getToken(req, res){
     if (item) {
       var parts = item.split('=');
       initial[parts[0]] = decodeURIComponent(parts[1]);
-      ourhash = initial[parts[0]];
+      ourhash = initial;
     }
   })
-  _token = ourhash.access_token;
+  _token = ourhash;
   console.log(_token);
 };
 
