@@ -2184,13 +2184,13 @@ function history()
       track_ids.push(value.items[i].track.id);
     }
   });
-  let response2 = spotifyApi.getAudioFeaturesForTracks(track_ids);
-  response2.then(function(value) {
-    for (let j = 0; j < track_ids.length; j++)
-    {
-      afList.push(convertAF(value[j]));
-    }
-  });
+  for (let j = 0; j < track_ids.length; j++)
+  {
+    let response2 = spotifyApi.getAudioFeaturesForTrack(track_ids[j]);
+    response2.then(function(value) {
+      afList.push(convertAF(value));
+    });
+  }
   return afList;
 };
 
