@@ -273,16 +273,8 @@ var SpotifyWebApi = require('spotify-web-api-node');
 var spotifyApi = new SpotifyWebApi({
   clientId: '6f90aae762534341aac911e306e7fc91',
   scopes: "user-read-recently-played user-library-read playlist-read-private playlist-read-collaborative user-top-read playlist-modify-public",
-  setAccessToken: 
+  setAccessToken: _token
 });
-
-
-// ------------------------------------------- //
-
-
-// http://expressjs.com/en/starter/static-files.html
-app.use(express.static('public'));
-
 
 
 
@@ -290,7 +282,7 @@ app.use(express.static('public'));
 // -------------------------------------------------------------------------------------------------------- //
 
 app.get("/top/tracks", function (request, response) {
-  spotifyApi.getMyTopTracks({ limit: 50 });
+  localStorage.setItem('MyRecentlyPlayedTracks', spotifyApi.getMyTopTracks({ limit: 50 }));
 });
 
 app.get("/audiofeatures", function (request, response) {
