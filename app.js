@@ -399,7 +399,7 @@ app.get("/recentlyplayed", function (request, response) {
 
 app.get("/librarytracks", function (request, response) {
   var trackName, trackId;
-  spotifyApi.getMySavedTracks({ limit: 50 });
+  spotifyApi.getMySavedTracks({ limit: 50 })
   .then(function (data) {
     // Return first search result
     trackName = data.body.tracks.items[0].name;
