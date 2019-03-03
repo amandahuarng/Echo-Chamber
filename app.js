@@ -2160,6 +2160,7 @@ function allTracks() {
         });
         let af = spotifyApi.getAudioFeaturesForTrack(ID);
         af.then(function(value) {
+          console.log(value)
           trackList.push([track_info].concat(convertAF(value)));
        });
       }
