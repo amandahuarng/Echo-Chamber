@@ -2053,6 +2053,75 @@ function convertAF(af)
     return content;
 }
 
+function past_feature_data(feature_list)
+{
+    let feature_stats = [[], []];
+    const num_of_tracks = feature_list.length;
+    for (let i = 0; i < feature_list[0].length; i++)
+    {
+        let average = 0;
+        for (let j = 0; j < num_of_tracks; j++)
+        {
+            average += feature_list[j][i];
+        }
+        average = average / num_of_tracks;
+        feature_stats[0][i] = average;
+        let SD = 0
+        for (let k = 0; k < num_of_tracks; k++)
+        {
+            SD += (feature_list[k][i] - average) ** 2;
+        }
+        SD = (SD / num_of_tracks) ** 0.5;
+        feature_stats[1][i] = SD;
+    }
+    return feature_stats;
+}
+
+function similar_tracks(feature_stats, user_tracks)
+{
+    let priorities = [];
+    const num_of_tracks = user_tracks.length;
+    for (let i = 0; i < num_of_tracks; i++)
+    {
+        let avg_diff = 0;
+        for (let j = 0; j < feature_stats[0].length; j++)
+        {
+            avg_diff += Math.abs(user_tracks[i][j + 1] - feature_stats[0][j]) / feature_stats[1][j];
+        }
+        avg_diff /= 12;
+        if (priorities.length == 0)
+        {
+            priorities[0] = user_tracks[i][0].concat([avg_diff]);
+        }
+        else
+        {
+            for (let j = 0; j < 25; j++)
+            {
+                if (j == priorities.length)
+                {
+                    priorities[j] = user_tracks[i][0].concat([avg_diff]);
+                    break;
+                }
+                else if (j == 0 && priorities[0][2] > avg_diff)
+                {
+                    
+                    priorities.unshift(user_tracks[i][0].concat([avg_diff]));
+                    break;
+                }
+                else if (j > 0 && priorities[j - 1][2] < user_tracks[i][0].concat([avg_diff]) && priorities[j][2] > user_tracks[i][0].concat([avg_diff]))
+                {
+                    priorities = priorities.slice(0, j).concat(user_tracks[i][0].concat([avg_diff]), priorities.slice(j, priorities.length));
+                    break;
+                }
+            }
+            if (priorities.length > 25)
+            {
+                priorities.pop();
+            }
+        }
+    }
+    return priorities;
+}
 
 function allTracks() {
   let response = spotifyApi.getMyTopTracks(limit = 50);
@@ -2118,6 +2187,15 @@ function history()
   });
   return afList;
 };
+
+function compare()
+{
+  H = history();
+  T = allTracks();
+  response1 = past_feature_data(H);
+  response2 = similar_tracks(response1, T);
+  return response2;
+}
 
 app.get("/audiofeatures", function (request, response) {
   // Un-comment this line if you need to insert a value into a text box.
