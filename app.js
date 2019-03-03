@@ -28,7 +28,7 @@ function handleRedirect(req, res){
 };
 
 
-function getToken(){
+function getToken(req, res){
   hash = window.location.hash.substring(1).split('&').reduce(function(initial, item)
   {
     if (item) {
