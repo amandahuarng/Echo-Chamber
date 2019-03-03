@@ -2159,8 +2159,8 @@ function allTracks() {
           track_info.concat(value.images[0].url);
         });
         let af = spotifyApi.getAudioFeaturesForTrack(ID);
-        af.then(function(feats) {
-          trackList.push([track_info].concat(convertAF(feats)));
+        af.then(function(value) {
+          trackList.push([track_info].concat(convertAF(value)));
        });
       }
     });
