@@ -21,22 +21,33 @@ const clientID = 'cc490ff74fbd4a84b6765221eee81f01';
 const redirectURI = 'https://na31.org'; //our browser
 const scopes = ['user-read-recently-played', 'user-library-read', 'playlist-read-private', 'playlist-read-collaborative', 'user-top-read', 'playlist-modify-public'];
 
-
 function handleRedirect(req, res){
   //changed ${clientID} to ${req}
-  //const authUrl = "https://google.com"
+  //const authUrl = "/Users/amanda/Desktop/Echo-Chamber/newplaylist.html";
   const authURL = `${authEndpoint}?client_id=${clientID}&redirect_uri=${redirectURI}&scope=${scopes}&response_type=token`;
   window.location.href = authURL;
-  console.log(authURL);
 };
 
 
-if (_token != null){
-  redirectToLocal();
-}
-
-function redirectToLocal(req, res){
-  const redirectURL = '/Users/amanda/Desktop/Echo-Chamber/newplaylist.html'
+if (window.location.href.splice(0,15) == redirectURI){
+    hash =window.location.hash
+    .substring(1)
+    .split('&')
+    .reduce(function (initial, item) {
+    if (item) {
+      var parts = item.split('=');
+      initial[parts[0]] = decodeURIComponent(parts[1]);
+    }
+   });
+   _token = hash.access_token;
+   
+   if (_token != null){
+       redirectToLocal();
+   }
+};
+  
+function redirectToLocal(){
+  const redirectURL = '/localhost:5000/newplaylist.html';
   window.location.href = redirectURL;
   console.log(redirectURL);
 };
