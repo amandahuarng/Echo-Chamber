@@ -2035,16 +2035,70 @@ options();
 
 // SPOTIFY API CALLS
 // -------------------------------------------------------------------------------------------------------- //
+function convertAF(af)
+{
+    content = [];
+    content.push(af.acousticness);
+    content.push(af.danceability);
+    content.push(af.duration_ms);
+    content.push(af.energy);
+    content.push(af.instrumentalness);
+    content.push(af.key);
+    content.push(af.liveness);
+    content.push(af.loudness);
+    content.push(af.mode);
+    content.push(af.speechiness);
+    content.push(af.tempo);
+    content.push(af.valence);
+    return content;
+}
 
-function topTracks() {
-  $.ajax({
-    url: "https://api.spotify.com/v1/me/top/tracks?limit=50",
-    type: "GET",
-    beforeSend: function (xhr) { xhr.setRequestHeader('Authorization', 'Bearer ' + _token); },
-    success: function (data) {
-      let ids = data.items.map(track => track.id).join(',');
-    }
-  })
+
+function allTracks() {
+  let response = spotifyApi.getMyTopTracks(limit = 50);
+  let trackList = [];
+  response.then(function(value) {
+     for (let i = 0; i < 50; i++)
+     {
+       const ID = value.items[i].id; 
+       const NAME = value.items[i].name; 
+       const ALBUM_ID = value.items[i].album.id;
+       let track_info = [ID, NAME];
+       let ALBUM = spotifyApi.getAlbum(ALBUM_ID);
+       ALBUM.then(function(value) {
+        track_info.concat(value.images[0]);
+       });
+       let af = spotifyApi.getAudioFeaturesForTrack(ID);
+       af.then(function(feats) {
+        trackList.push([track_info].concat(convertAF(af)));
+       });
+     }
+  });
+
+  for (let j = 0; j < 4; j++)
+  {
+    let response2 = spotifyApi.getMySavedTracks(limit = 50, offset = j*0)
+    response2.then(function(value) {
+      for (let k = 0; k < 50; k++)
+      {
+        const ID = value.items[i].id; 
+        const NAME = value.items[i].name; 
+        const ALBUM_ID = value.items[i].album.id;
+        let track_info = [ID, NAME];
+        let ALBUM = spotifyApi.getAlbum(ALBUM_ID);
+        ALBUM.then(function(value) {
+        track_info.concat(value.images[0]);
+        });
+        let af = spotifyApi.getAudioFeaturesForTrack(ID);
+        af.then(function(feats) {
+        trackList.push([track_info].concat(convertAF(af)));
+       });
+      }
+    });
+  } 
+
+
+
 };
 
 app.get("/audiofeatures", function (request, response) {
