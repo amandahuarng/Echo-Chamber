@@ -282,11 +282,16 @@ options();
 // SPOTIFY API CALLS
 // -------------------------------------------------------------------------------------------------------- //
 
-app.get("/top/tracks", function (request, response) {
-  var apiTopTracks = spotifyApi.getMyTopTracks({ limit: 50 })
-  console.log(apiTopTracks);
-  localStorage.setItem('MyRecentlyPlayedTracks', apiTopTracks);
-});
+function topTracks() {
+  $.ajax({
+    url: "https://api.spotify.com/v1/me/top/tracks?limit=50",
+    type: "GET",
+    beforeSend: function (xhr) { xhr.setRequestHeader('Authorization', 'Bearer ' + _token); },
+    success: function (data) {
+      let ids = data.items.map(track => track.id).join(',');
+    }
+  })
+};
 
 app.get("/audiofeatures", function (request, response) {
   // Un-comment this line if you need to insert a value into a text box.
@@ -343,3 +348,148 @@ app.get("/audiofeatures", function (request, response) {
       console.log(err);
     });
 });
+
+app.get("/recentlyplayed", function (request, response) {
+  var trackName, trackId;
+  spotifyApi.getMyRecentlyPlayedTracks({ limit: 50 })
+    .then(function (data) {
+      // Return first search result
+      trackName = data.body.tracks.items[0].name;
+      console.log(trackName);
+      trackId = data.body.tracks.items[0].id;
+      console.log(trackId);
+      return trackId;
+    })
+    .then(function (trackId) {
+      // Get the audio features for the track
+      return spotifyApi.getAudioFeaturesForTrack(trackId);
+    })
+    .then(function (audioFeatures) {
+      var valenceValues = audioFeatures.body.audio_features.map(function (t) { return t ? t.valence : null; }).filter(e => e);
+      var acousticnessValues = audioFeatures.body.audio_features.map(function (t) { return t ? t.acousticness : null; }).filter(e => e);
+      // Danceability audio feature
+      var danceabilityValues = audioFeatures.body.audio_features.map(function (t) { return t ? t.danceability : null; }).filter(e => e);
+      // Energy audio feature
+      var energyValues = audioFeatures.body.audio_features.map(function (t) { return t ? t.energy : null; }).filter(e => e);
+      // Instrumentalness audio feature
+      var instrumentalnessValues = audioFeatures.body.audio_features.map(function (t) { return t ? t.instrumentalness : null; }).filter(e => e);
+      // Liveness audio feature
+      var livenessValues = audioFeatures.body.audio_features.map(function (t) { return t ? t.liveness : null; }).filter(e => e);
+      // Speechiness audio feature
+      var speechinessValues = audioFeatures.body.audio_features.map(function (t) { return t ? t.speechiness : null; }).filter(e => e);
+      // Duration Time audio feature
+      var durationtime = audioFeatures.body.audio_features.map(function (t) { return t ? t.durationtime : null; }).filter(e => e);
+      // Tempo audio feature
+      var tempo_ = audioFeatures.body.audio_features.map(function (t) { return t ? t.tempo : null; }).filter(e => e);
+      // Loudness audio feature
+      var loudness_ = audioFeatures.body.audio_features.map(function (t) { return t ? t.loudness : null; }).filter(e => e);
+      // Key audio feature
+      var key_ = audioFeatures.body.audio_features.map(function (t) { return t ? t.key : null; }).filter(e => e);
+      // Create and output the array containing all of the audio feature values
+      response.json({
+        track: { name: trackName, id: trackId }, valence: valenceValues, acousticness: acousticnessValues,
+        danceability: danceabilityValues, energy: energyValues, instrumentalness: instrumentalnessValues,
+        liveness: livenessValues, speechiness: speechinessValues, duration_time: durationtime, tempo: tempo_, loudness: loudness_, key: key_
+      });
+    })
+    .catch(function (err) {
+      console.log(err);
+    });
+});
+
+app.get("/librarytracks", function (request, response) {
+  var trackName, trackId;
+  spotifyApi.getMySavedTracks({ limit: 50 });
+  .then(function (data) {
+    // Return first search result
+    trackName = data.body.tracks.items[0].name;
+    console.log(trackName);
+    trackId = data.body.tracks.items[0].id;
+    console.log(trackId);
+    return trackId;
+  })
+    .then(function (trackId) {
+      // Get the audio features for the track
+      return spotifyApi.getAudioFeaturesForTrack(trackId);
+    })
+    .then(function (audioFeatures) {
+      var valenceValues = audioFeatures.body.audio_features.map(function (t) { return t ? t.valence : null; }).filter(e => e);
+      var acousticnessValues = audioFeatures.body.audio_features.map(function (t) { return t ? t.acousticness : null; }).filter(e => e);
+      // Danceability audio feature
+      var danceabilityValues = audioFeatures.body.audio_features.map(function (t) { return t ? t.danceability : null; }).filter(e => e);
+      // Energy audio feature
+      var energyValues = audioFeatures.body.audio_features.map(function (t) { return t ? t.energy : null; }).filter(e => e);
+      // Instrumentalness audio feature
+      var instrumentalnessValues = audioFeatures.body.audio_features.map(function (t) { return t ? t.instrumentalness : null; }).filter(e => e);
+      // Liveness audio feature
+      var livenessValues = audioFeatures.body.audio_features.map(function (t) { return t ? t.liveness : null; }).filter(e => e);
+      // Speechiness audio feature
+      var speechinessValues = audioFeatures.body.audio_features.map(function (t) { return t ? t.speechiness : null; }).filter(e => e);
+      // Duration Time audio feature
+      var durationtime = audioFeatures.body.audio_features.map(function (t) { return t ? t.durationtime : null; }).filter(e => e);
+      // Tempo audio feature
+      var tempo_ = audioFeatures.body.audio_features.map(function (t) { return t ? t.tempo : null; }).filter(e => e);
+      // Loudness audio feature
+      var loudness_ = audioFeatures.body.audio_features.map(function (t) { return t ? t.loudness : null; }).filter(e => e);
+      // Key audio feature
+      var key_ = audioFeatures.body.audio_features.map(function (t) { return t ? t.key : null; }).filter(e => e);
+      // Create and output the array containing all of the audio feature values
+      response.json({
+        track: { name: trackName, id: trackId }, valence: valenceValues, acousticness: acousticnessValues,
+        danceability: danceabilityValues, energy: energyValues, instrumentalness: instrumentalnessValues,
+        liveness: livenessValues, speechiness: speechinessValues, duration_time: durationtime, tempo: tempo_, loudness: loudness_, key: key_
+      });
+    })
+    .catch(function (err) {
+      console.log(err);
+    });
+});
+
+app.get("/playlisttracks", function (request, response) {
+  var trackName, trackId;
+  spotifyApi.getPlaylistTracks(your_mood_playlist, { limit: 50 })
+    .then(function (data) {
+      // Return first search result
+      trackName = data.body.tracks.items[0].name;
+      console.log(trackName);
+      trackId = data.body.tracks.items[0].id;
+      console.log(trackId);
+      return trackId;
+    })
+    .then(function (trackId) {
+      // Get the audio features for the track
+      return spotifyApi.getAudioFeaturesForTrack(trackId);
+    })
+    .then(function (audioFeatures) {
+      var valenceValues = audioFeatures.body.audio_features.map(function (t) { return t ? t.valence : null; }).filter(e => e);
+      var acousticnessValues = audioFeatures.body.audio_features.map(function (t) { return t ? t.acousticness : null; }).filter(e => e);
+      // Danceability audio feature
+      var danceabilityValues = audioFeatures.body.audio_features.map(function (t) { return t ? t.danceability : null; }).filter(e => e);
+      // Energy audio feature
+      var energyValues = audioFeatures.body.audio_features.map(function (t) { return t ? t.energy : null; }).filter(e => e);
+      // Instrumentalness audio feature
+      var instrumentalnessValues = audioFeatures.body.audio_features.map(function (t) { return t ? t.instrumentalness : null; }).filter(e => e);
+      // Liveness audio feature
+      var livenessValues = audioFeatures.body.audio_features.map(function (t) { return t ? t.liveness : null; }).filter(e => e);
+      // Speechiness audio feature
+      var speechinessValues = audioFeatures.body.audio_features.map(function (t) { return t ? t.speechiness : null; }).filter(e => e);
+      // Duration Time audio feature
+      var durationtime = audioFeatures.body.audio_features.map(function (t) { return t ? t.durationtime : null; }).filter(e => e);
+      // Tempo audio feature
+      var tempo_ = audioFeatures.body.audio_features.map(function (t) { return t ? t.tempo : null; }).filter(e => e);
+      // Loudness audio feature
+      var loudness_ = audioFeatures.body.audio_features.map(function (t) { return t ? t.loudness : null; }).filter(e => e);
+      // Key audio feature
+      var key_ = audioFeatures.body.audio_features.map(function (t) { return t ? t.key : null; }).filter(e => e);
+      // Create and output the array containing all of the audio feature values
+      response.json({
+        track: { name: trackName, id: trackId }, valence: valenceValues, acousticness: acousticnessValues,
+        danceability: danceabilityValues, energy: energyValues, instrumentalness: instrumentalnessValues,
+        liveness: livenessValues, speechiness: speechinessValues, duration_time: durationtime, tempo: tempo_, loudness: loudness_, key: key_
+      });
+    })
+    .catch(function (err) {
+      console.log(err);
+    });
+});
+
