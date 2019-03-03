@@ -2146,7 +2146,7 @@ function allTracks() {
 
   for (let j = 0; j < 4; j++)
   {
-    let response2 = spotifyApi.getMySavedTracks(limit = 50, offset = j*0)
+    let response2 = spotifyApi.getMySavedTracks(limit = 50, offset = (j*0))
     response2.then(function(value) {
       for (let k = 0; k < value.items.length; k++)
       {
@@ -2156,7 +2156,7 @@ function allTracks() {
         let track_info = [ID, NAME];
         let ALBUM = spotifyApi.getAlbum(ALBUM_ID);
         ALBUM.then(function(value) {
-        track_info.concat(value.images[0]);
+          track_info.concat(value.images[0].url);
         });
         let af = spotifyApi.getAudioFeaturesForTrack(ID);
         af.then(function(feats) {
