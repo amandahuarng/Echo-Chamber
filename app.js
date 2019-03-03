@@ -282,7 +282,9 @@ var spotifyApi = new SpotifyWebApi({
 // -------------------------------------------------------------------------------------------------------- //
 
 app.get("/top/tracks", function (request, response) {
-  localStorage.setItem('MyRecentlyPlayedTracks', spotifyApi.getMyTopTracks({ limit: 50 }));
+  var apiTopTracks = spotifyApi.getMyTopTracks({ limit: 50 })
+  console.log(apiTopTracks);
+  localStorage.setItem('MyRecentlyPlayedTracks', apiTopTracks);
 });
 
 app.get("/audiofeatures", function (request, response) {
