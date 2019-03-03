@@ -16,12 +16,12 @@ let _token = hash.access_token;
 
 const authEndpoint = 'https://accounts.spotify.com/authorize';
 
+// HELOOOOOO
 // Replace with your app's client ID, redirect URI and desired scopes
 const clientID = 'cc490ff74fbd4a84b6765221eee81f01';
-const redirectURI = 'https://google.com'; //our browser
+const redirectURI = 'http://google.com'; //our browser
 const scopes = ['user-read-recently-played', 'user-library-read', 'playlist-read-private', 'playlist-read-collaborative', 'user-top-read', 'playlist-modify-public'];
 const token = _token;
-
 
 function handleRedirect(req, res){
   //changed ${clientID} to ${req}
@@ -30,17 +30,7 @@ function handleRedirect(req, res){
   window.location.href = authURL;
   console.log(authURL);
 };
-/*
-$.ajax({
-  url: 'https://api.spotify.com/v1/me',
-  headers: {
-      'Authorization': 'Bearer ' + accessToken
-  },
-  success: function(response) {
-      ...
-  }
-});
-*/
+
 
 function options() {
   // Visualization options //
