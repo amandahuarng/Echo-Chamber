@@ -38,7 +38,7 @@ function getToken(req, res){
       console.log(parts + ' 123');
       console.log(initial + ' initial');
       initial[parts[0]] = decodeURIComponent(parts[1]);
-      ourhash = initial[parts[0]];
+      ourhash = initial;
     }
   })
   _token = ourhash.access_token;
