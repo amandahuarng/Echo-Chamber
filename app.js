@@ -1,15 +1,5 @@
-// Authorization request
-const hash = window.location.hash
-.substring(1)
-.split('&')
-.reduce(function (initial, item) {
-if (item) {
-  var parts = item.split('=');
-  initial[parts[0]] = decodeURIComponent(parts[1]);
-}
-return initial;
-}, {});
-window.location.hash = '';
+var app = express();
+var run = require('./server.js');
 
 // Set token
 let _token = hash.access_token;
@@ -40,10 +30,9 @@ function getToken(url){
   })
 };
 
-
 function options() {
   // Visualization options //
-
+  console.log('made it to valence');
   var valenceopts = {
     angle: 0.15,              // We can have a bunch of gauges displaying your current moods.
     lineWidth: 0.31,          // Line thickness
@@ -207,46 +196,56 @@ function options() {
 
   // Defining the instrumentalness canvas element and creating the instrumentalness gauge
   var instrumentalnesstarget = document.getElementById('instrumentalnessgauge');
-  var instrumentalnessgauge = new Gauge(instrumentalnesstarget).setOptions(instrumentalness);
+  var instrumentalnessgauge = new Gauge(instrumentalnesstarget).setOptions(instrumentalnessopts);
   instrumentalnessgauge.setMinValue(0);
   instrumentalnessgauge.setMaxValue(1);
   instrumentalnessgauge.set(0);
 
   // Defining the liveness canvas element and creating the liveness gauge
   var livenesstarget = document.getElementById('livenessgauge');
-  var livenessgauge = new Gauge(livenesstarget).setOptions(liveness);
+  var livenessgauge = new Gauge(livenesstarget).setOptions(livenessopts);
   livenessgauge.setMinValue(0);
   livenessgauge.setMaxValue(1);
   livenessgauge.set(0);
 
   // Defining the speechiness canvas element and creating the speechiness gauge
   var speechinesstarget = document.getElementById('speechinessgauge');
-  var speechinessgauge = new Gauge(speechinesstarget).setOptions(speechiness)
+  var speechinessgauge = new Gauge(speechinesstarget).setOptions(speechinessopts)
   speechinessgauge.setMinValue(0);
   speechinessgauge.setMaxValue(1);
   speechinessgauge.set(0);
 
-  $('form').submit(function(event) {
+  $('form').submit(function (event) {
     event.preventDefault();
     $('ul#values').empty();
-    $.get('/audiofeatures?' + $.param({track: track}), function(data) {
-      $('input').val('');
-      $('input').focus();
-      $('#artistName').html("Audio features for data.track.name");
-      $('#valence').html(data.valence);
+    $.get('/audiofeatures?' + $.param({ track: track }), function (data) {
+      // Running the function that obtains the audio features from the API.
+      $('#playlistName').html("Audio features for" + data.body.tracks.items[0].id);
+      // Saving the valence value of the song onto the gauge, and printing the number as well
+      $('#valenceValues').html(data.valence);
       valencegauge.set(data.valence);
-      $('#acousticness').html(data.acousticness);
+      console.log(data.valence);
+      // Saving the acousticness value of the song onto the gauge, and printing the number as well
+      $('#acousticnessValues').html(data.acousticness);
       acousticnessgauge.set(data.acousticness);
-      $('#danceability').html(data.danceability);
+      console.log(data.acousticness);
+      // Saving the danceability value of the song onto the gauge, and printing the number as well
+      $('#danceabilityValues').html(data.danceability);
       danceabilitygauge.set(data.danceability);
-      $('#energy').html(data.energy);
+      console.log(data.danceability);
+      // Saving the energy value of the song onto the gauge, and printing the number as well
+      $('#energyValues').html(data.energy);
       energygauge.set(data.energy);
-      $('#instrumentalness').html(data.instrumentalness);
+      console.log(data.energy);
+      $('#instrumentalnessValues').html(data.instrumentalness);
       instrumentalnessgauge.set(data.instrumentalness);
-      $('#liveness').html(data.liveness);
+      console.log(data.instrumentalness);
+      $('#livenessValues').html(data.liveness);
       livenessgauge.set(data.liveness);
-      $('#speechiness').html(data.speechiness);
+      console.log(data.liveness);
+      $('#speechinessValues').html(data.speechiness);
       speechinessgauge.set(data.speechiness);
+      console.log(data.speechiness);
       $('#duration_time').html(data.duration_time);
       console.log(data.duration_time);
       $('#tempo').html(data.tempo);
@@ -255,10 +254,8 @@ function options() {
       console.log(data.loudness);
       $('#key').html(data.key);
       console.log(data.key);
-
-      data.audiofeatures.forEach(function(feature) {
-        $('<li></li>').text(features).appendTo('ul#values');
-      });
     });
   });
 };
+
+options();
