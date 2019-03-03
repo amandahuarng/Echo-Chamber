@@ -2100,8 +2100,23 @@ function allTracks() {
 
 function history()
 {
+  track_ids = [];
+  afList = [];
   let response = spotifyApi.getMyRecentlyPlayedTracks(limit = 50);
-
+  response.then(function(data) {
+    for (let i = 0; i < 50; i++)
+    {
+      track_ids.push(data.items[i].id);
+    }
+  });
+  let response2 = spotifyApi.getAudioFeaturesForTracks(tracks_id);
+  response2.then(function(value) {
+    for (let j = 0; j < 50; j++)
+    {
+      afList.push(convertAF(value[j]));
+    }
+  });
+  return afList;
 };
 
 app.get("/audiofeatures", function (request, response) {
