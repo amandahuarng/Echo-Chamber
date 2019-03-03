@@ -38,6 +38,7 @@ function getToken(){
     }
   })
   _token = hash.access_token;
+  console.log(_token);
 };
 
 
