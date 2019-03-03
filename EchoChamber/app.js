@@ -220,7 +220,6 @@ function options() {
   $('form').submit(function(event) {
     event.preventDefault();
     $('ul#values').empty();
-    var track = $('input').val();
     $.get('/audiofeatures?' + $.param({track: track}), function(data) {
       $('input').val('');
       $('input').focus();
