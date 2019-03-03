@@ -2184,6 +2184,8 @@ function history()
       track_ids.push(value.items[i].track.id);
     }
   });
+  for (let repeat = 0; repeat < 1000; repeat++)
+  {}
   for (let j = 0; j < track_ids.length; j++)
   {
     let response2 = spotifyApi.getAudioFeaturesForTrack(track_ids[j]);
@@ -2191,7 +2193,6 @@ function history()
       afList.push(convertAF(value));
     });
   }
-  console.log(afList);
   return afList;
 };
 
