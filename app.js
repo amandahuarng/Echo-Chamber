@@ -29,15 +29,15 @@ function handleRedirect(req, res){
 
 
 function getToken(req, res){
-  hash = window.location.hash.substring(1).split('&').reduce(function(initial, item)
+  ourhash = window.location.hash.substring(1).split('&').reduce(function(initial, item)
   {
     if (item) {
       var parts = item.split('=');
       initial[parts[0]] = decodeURIComponent(parts[1]);
-      hash = initial[parts[0]];
+      ourhash = initial[parts[0]];
     }
   })
-  _token = hash.access_token;
+  _token = ourhash.access_token;
   console.log(_token);
 };
 
