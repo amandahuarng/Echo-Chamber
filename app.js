@@ -2173,14 +2173,14 @@ function history()
   afList = [];
   let response = spotifyApi.getMyRecentlyPlayedTracks(limit = 50);
   response.then(function(value) {
-    for (let i = 0; i < 50; i++)
+    for (let i = 0; i < value.items.length; i++)
     {
       track_ids.push(value.items[i].track.id);
     }
   });
   let response2 = spotifyApi.getAudioFeaturesForTracks(track_ids);
   response2.then(function(value) {
-    for (let j = 0; j < 50; j++)
+    for (let j = 0; j < value.items.length; j++)
     {
       afList.push(convertAF(value[j]));
     }
