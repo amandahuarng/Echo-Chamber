@@ -1,17 +1,34 @@
+// Authorization request
+const hash = window.location.hash
+.substring(1)
+.split('&')
+.reduce(function (initial, item) {
+if (item) {
+  var parts = item.split('=');
+  initial[parts[0]] = decodeURIComponent(parts[1]);
+}
+return initial;
+}, {});
+window.location.hash = '';
+
+// Set token
+let _token = hash.access_token;
+
 const authEndpoint = 'https://accounts.spotify.com/authorize';
 
 
 // Replace with your app's client ID, redirect URI and desired scopes
-const clientID = '6f90aae762534341aac911e306e7fc91';
-const redirectURI = 'http://localhost:8888'; //our browser
+const clientID = 'cc490ff74fbd4a84b6765221eee81f01';
+const redirectURI = 'http://google.com'; //our browser
 const scopes = ['user-read-recently-played', 'user-library-read', 'playlist-read-private', 'playlist-read-collaborative', 'user-top-read', 'playlist-modify-public'];
+const token = _token;
 
 function handleRedirect(req, res){
   //changed ${clientID} to ${req}
-  const authUrl = "google.com"
-  //const authURL = `${authEndpoint}?client_id=${clientID}&redirect_uri=${redirectUri}&scope=${scopes}&response_type=token`;
-  window.location.href = authUrl;
-  console.log(authUrl);
+  //const authUrl = "https://google.com"
+  const authURL = `${authEndpoint}?client_id=${clientID}&redirect_uri=${redirectURI}&scope=${scopes}&response_type=token`;
+  window.location.href = authURL;
+  console.log(authURL);
 };
 
 

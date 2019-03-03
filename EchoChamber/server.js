@@ -6,20 +6,20 @@ var express = require('express');
 var app = express();
 
 // Authorization request
-// const hash = window.location.hash
-// .substring(1)
-// .split('&')
-// .reduce(function (initial, item) {
-//   if (item) {
-//     var parts = item.split('=');
-//     initial[parts[0]] = decodeURIComponent(parts[1]);
-//   }
-//   return initial;
-// }, {});
-// window.location.hash = '';
+const hash = window.location.hash
+  .substring(1)
+  .split('&')
+  .reduce(function (initial, item) {
+  if (item) {
+    var parts = item.split('=');
+    initial[parts[0]] = decodeURIComponent(parts[1]);
+  }
+  return initial;
+}, {});
+window.location.hash = '';
 
 // Set token
-// let _token = hash.access_token;
+let _token = hash.access_token;
 
 const authEndpoint = 'https://accounts.spotify.com/authorize';
 
@@ -29,10 +29,6 @@ const clientID = '6f90aae762534341aac911e306e7fc91';
 const redirectURI = 'http://localhost:8888'; //our browser
 const scopes = ['user-read-recently-played', 'user-library-read', 'playlist-read-private', 'playlist-read-collaborative', 'user-top-read', 'playlist-modify-public'];
 
-//function handleRedirect(req, res){
-  //changed ${clientID} to ${req}
-//  window.redirect(authURL);
-//}
 
 
 
