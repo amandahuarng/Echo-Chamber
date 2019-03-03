@@ -2152,7 +2152,7 @@ function allTracks() {
       {
         const ID = value.items[k].id; 
         const NAME = value.items[k].name; 
-        const ALBUM_ID = value.items[k].album.id;
+        const ALBUM_ID = value.items[k].track.album.id;
         let track_info = [ID, NAME];
         let ALBUM = spotifyApi.getAlbum(ALBUM_ID);
         ALBUM.then(function(value) {
@@ -2175,7 +2175,7 @@ function history()
   response.then(function(value) {
     for (let i = 0; i < 50; i++)
     {
-      track_ids.push(value.items[i].id);
+      track_ids.push(value.items[i].track.id);
     }
   });
   let response2 = spotifyApi.getAudioFeaturesForTracks(track_ids);
