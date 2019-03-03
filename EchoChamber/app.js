@@ -15,10 +15,10 @@ function handleRedirect(req, res){
 };
 
 
-function() {
+function options() {
   // Visualization options //
 
-  Var valenceopts = {
+  var valenceopts = {
     angle: 0.15,              // We can have a bunch of gauges displaying your current moods.
     lineWidth: 0.31,          // Line thickness
     radiusScale: 1,           // The relative raidus of the gauge
@@ -37,7 +37,7 @@ function() {
     highDpiSupport: true      // Support for high resolutions
   };
 
-  Var acousticnessopts = {
+  var acousticnessopts = {
     angle: 0.15,              // We can have a bunch of gauges displaying your current moods.
     lineWidth: 0.31,          // Line thickness
     radiusScale: 1,           // The relative raidus of the gauge
@@ -56,7 +56,7 @@ function() {
     highDpiSupport: true      // Support for high resolutions
   };
 
-  Var danceabilityopts = {
+  var danceabilityopts = {
     angle: 0.15,              // We can have a bunch of gauges displaying your current moods.
     lineWidth: 0.31,          // Line thickness
     radiusScale: 1,           // The relative raidus of the gauge
@@ -75,7 +75,7 @@ function() {
     highDpiSupport: true      // Support for high resolutions
   };
 
-  Var energyopts = {
+  var energyopts = {
     angle: 0.15,              // We can have a bunch of gauges displaying your current moods.
     lineWidth: 0.31,          // Line thickness
     radiusScale: 1,           // The relative raidus of the gauge
@@ -94,7 +94,7 @@ function() {
     highDpiSupport: true      // Support for high resolutions
   };
 
-  Var instrumentalnessopts = {
+  var instrumentalnessopts = {
     angle: 0.15,              // We can have a bunch of gauges displaying your current moods.
     lineWidth: 0.31,          // Line thickness
     radiusScale: 1,           // The relative raidus of the gauge
@@ -113,7 +113,7 @@ function() {
     highDpiSupport: true      // Support for high resolutions
   };
 
-  Var livenessopts = {
+  var livenessopts = {
     angle: 0.15,              // We can have a bunch of gauges displaying your current moods.
     lineWidth: 0.31,          // Line thickness
     radiusScale: 1,           // The relative raidus of the gauge
@@ -132,7 +132,7 @@ function() {
     highDpiSupport: true      // Support for high resolutions
   };
 
-  Var speechinessopts = {
+  var speechinessopts = {
     angle: 0.15,              // We can have a bunch of gauges displaying your current moods.
     lineWidth: 0.31,          // Line thickness
     radiusScale: 1,           // The relative raidus of the gauge
@@ -205,34 +205,35 @@ function() {
     $('ul#values').empty();
     var track = $('input').val();
     $.get('/audiofeatures?' + $.param({track: track}), function(data) {
-    $('input').val('');
-    $('input').focus();
-    $('#artistName').html("Audio features for data.track.name");
-    $('#valence').html(data.valence);
-    valencegauge.set(data.valence);
-    $('#acousticness').html(data.acousticness);
-    acousticnessgauge.set(data.acousticness);
-    $('#danceability').html(data.danceability);
-    danceabilitygauge.set(data.danceability);
-    $('#energy').html(data.energy);
-    energygauge.set(data.energy);
-    $('#instrumentalness').html(data.instrumentalness);
-    instrumentalnessgauge.set(data.instrumentalness);
-    $('#liveness').html(data.liveness);
-    livenessgauge.set(data.liveness);
-    $('#speechiness').html(data.speechiness);
-    speechinessgauge.set(data.speechiness);
-    $('#duration_time').html(data.duration_time);
-    console.log(data.duration_time);
-    $('#tempo').html(data.tempo);
-    console.log(data.tempo);
-    $('#loudness').html(data.loudness);
-    console.log(data.loudness);
-    $('#key').html(data.key);
-    console.log(data.key);
+      $('input').val('');
+      $('input').focus();
+      $('#artistName').html("Audio features for data.track.name");
+      $('#valence').html(data.valence);
+      valencegauge.set(data.valence);
+      $('#acousticness').html(data.acousticness);
+      acousticnessgauge.set(data.acousticness);
+      $('#danceability').html(data.danceability);
+      danceabilitygauge.set(data.danceability);
+      $('#energy').html(data.energy);
+      energygauge.set(data.energy);
+      $('#instrumentalness').html(data.instrumentalness);
+      instrumentalnessgauge.set(data.instrumentalness);
+      $('#liveness').html(data.liveness);
+      livenessgauge.set(data.liveness);
+      $('#speechiness').html(data.speechiness);
+      speechinessgauge.set(data.speechiness);
+      $('#duration_time').html(data.duration_time);
+      console.log(data.duration_time);
+      $('#tempo').html(data.tempo);
+      console.log(data.tempo);
+      $('#loudness').html(data.loudness);
+      console.log(data.loudness);
+      $('#key').html(data.key);
+      console.log(data.key);
 
-    data.audiofeatures.forEach(function(feature) {
-      $('<li></li>').text(features).appendTo('ul#values');
+      data.audiofeatures.forEach(function(feature) {
+        $('<li></li>').text(features).appendTo('ul#values');
+      });
     });
   });
-});
+}
