@@ -1,4 +1,4 @@
-import SpotifyWebApi from '/.spotify-web-api.js';
+import SpotifyWebApi from './spotify-web-api.js';
 
 // Authorization request
 const hash = window.location.hash

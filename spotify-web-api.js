@@ -1,1510 +1,1744 @@
+/* global module */
 'use strict';
 
-var AuthenticationRequest = require('./authentication-request'),
-  WebApiRequest = require('./webapi-request'),
-  HttpManager = require('./http-manager');
+/**
+ * Class representing the API
+ */
+var SpotifyWebApi = (function() {
+  var _baseUri = 'https://api.spotify.com/v1';
+  var _accessToken = null;
+  var _promiseImplementation = null;
 
-function SpotifyWebApi(credentials) {
-  this._credentials = credentials || {};
-}
+  var WrapPromiseWithAbort = function(promise, onAbort) {
+    promise.abort = onAbort;
+    return promise;
+  };
 
-SpotifyWebApi.prototype = {
-  setCredentials: function(credentials) {
-    for (var key in credentials) {
-      if (credentials.hasOwnProperty(key)) {
-        this._credentials[key] = credentials[key];
+  var _promiseProvider = function(promiseFunction, onAbort) {
+    var returnedPromise;
+    if (_promiseImplementation !== null) {
+      var deferred = _promiseImplementation.defer();
+      promiseFunction(
+        function(resolvedResult) {
+          deferred.resolve(resolvedResult);
+        },
+        function(rejectedResult) {
+          deferred.reject(rejectedResult);
+        }
+      );
+      returnedPromise = deferred.promise;
+    } else {
+      if (window.Promise) {
+        returnedPromise = new window.Promise(promiseFunction);
       }
     }
-  },
 
-  getCredentials: function() {
-    return this._credentials;
-  },
-
-  resetCredentials: function() {
-    this._credentials = null;
-  },
-
-  setClientId: function(clientId) {
-    this._setCredential('clientId', clientId);
-  },
-
-  setClientSecret: function(clientSecret) {
-    this._setCredential('clientSecret', clientSecret);
-  },
-
-  setAccessToken: function(accessToken) {
-    this._setCredential('accessToken', accessToken);
-  },
-
-  setRefreshToken: function(refreshToken) {
-    this._setCredential('refreshToken', refreshToken);
-  },
-
-  setRedirectURI: function(redirectUri) {
-    this._setCredential('redirectUri', redirectUri);
-  },
-
-  getRedirectURI: function() {
-    return this._getCredential('redirectUri');
-  },
-
-  getClientId: function() {
-    return this._getCredential('clientId');
-  },
-
-  getClientSecret: function() {
-    return this._getCredential('clientSecret');
-  },
-
-  getAccessToken: function() {
-    return this._getCredential('accessToken');
-  },
-
-  getRefreshToken: function() {
-    return this._getCredential('refreshToken');
-  },
-
-  resetClientId: function() {
-    this._resetCredential('clientId');
-  },
-
-  resetClientSecret: function() {
-    this._resetCredential('clientSecret');
-  },
-
-  resetAccessToken: function() {
-    this._resetCredential('accessToken');
-  },
-
-  resetRefreshToken: function() {
-    this._resetCredential('refreshToken');
-  },
-
-  resetRedirectURI: function() {
-    this._resetCredential('redirectUri');
-  },
-
-  _setCredential: function(credentialKey, value) {
-    this._credentials = this._credentials || {};
-    this._credentials[credentialKey] = value;
-  },
-
-  _getCredential: function(credentialKey) {
-    if (!this._credentials) {
-      return;
+    if (returnedPromise) {
+      return new WrapPromiseWithAbort(returnedPromise, onAbort);
     } else {
-      return this._credentials[credentialKey];
+      return null;
     }
-  },
+  };
 
-  _resetCredential: function(credentialKey) {
-    if (!this._credentials) {
-      return;
-    } else {
-      this._credentials[credentialKey] = null;
-    }
-  },
-
-  /**
-   * Look up a track.
-   * @param {string} trackId The track's ID.
-   * @param {Object} [options] The possible options, currently only market.
-   * @param {requestCallback} [callback] Optional callback method to be called instead of the promise.
-   * @example getTrack('3Qm86XLflmIXVm1wcwkgDK').then(...)
-   * @returns {Promise|undefined} A promise that if successful, returns an object containing information
-   *          about the track. Not returned if a callback is given.
-   */
-  getTrack: function(trackId, options, callback) {
-    // In case someone is using a version where options parameter did not exist.
-    var actualCallback, actualOptions;
-    if (typeof options === 'function' && !callback) {
-      actualCallback = options;
-      actualOptions = {};
-    } else {
-      actualCallback = callback;
-      actualOptions = options;
-    }
-
-    return WebApiRequest.builder(this.getAccessToken())
-      .withPath('/v1/tracks/' + trackId)
-      .withQueryParameters(actualOptions)
-      .build()
-      .execute(HttpManager.get, actualCallback);
-  },
-
-  /**
-   * Look up several tracks.
-   * @param {string[]} trackIds The IDs of the artists.
-   * @param {Object} [options] The possible options, currently only market.
-   * @param {requestCallback} [callback] Optional callback method to be called instead of the promise.
-   * @example getArtists(['0oSGxfWSnnOXhD2fKuz2Gy', '3dBVyJ7JuOMt4GE9607Qin']).then(...)
-   * @returns {Promise|undefined} A promise that if successful, returns an object containing information
-   *          about the artists. Not returned if a callback is given.
-   */
-  getTracks: function(trackIds, options, callback) {
-    // In case someone is using a version where options parameter did not exist.
-    var actualCallback, actualOptions;
-    if (typeof options === 'function' && !callback) {
-      actualCallback = options;
-      actualOptions = {};
-    } else {
-      actualCallback = callback;
-      actualOptions = options;
-    }
-
-    return WebApiRequest.builder(this.getAccessToken())
-      .withPath('/v1/tracks')
-      .withQueryParameters(
-        {
-          ids: trackIds.join(',')
-        },
-        actualOptions
-      )
-      .build()
-      .execute(HttpManager.get, actualCallback);
-  },
-
-  /**
-   * Look up an album.
-   * @param {string} albumId The album's ID.
-   * @param {Object} [options] The possible options, currently only market.
-   * @param {requestCallback} [callback] Optional callback method to be called instead of the promise.
-   * @example getAlbum('0sNOF9WDwhWunNAHPD3Baj').then(...)
-   * @returns {Promise|undefined} A promise that if successful, returns an object containing information
-   *          about the album. Not returned if a callback is given.
-   */
-  getAlbum: function(albumId, options, callback) {
-    // In case someone is using a version where options parameter did not exist.
-    var actualCallback, actualOptions;
-    if (typeof options === 'function' && !callback) {
-      actualCallback = options;
-      actualOptions = {};
-    } else {
-      actualCallback = callback;
-      actualOptions = options;
-    }
-
-    return WebApiRequest.builder(this.getAccessToken())
-      .withPath('/v1/albums/' + albumId)
-      .withQueryParameters(actualOptions)
-      .build()
-      .execute(HttpManager.get, actualCallback);
-  },
-
-  /**
-   * Look up several albums.
-   * @param {string[]} albumIds The IDs of the albums.
-   * @param {Object} [options] The possible options, currently only market.
-   * @param {requestCallback} [callback] Optional callback method to be called instead of the promise.
-   * @example getAlbums(['0oSGxfWSnnOXhD2fKuz2Gy', '3dBVyJ7JuOMt4GE9607Qin']).then(...)
-   * @returns {Promise|undefined} A promise that if successful, returns an object containing information
-   *          about the albums. Not returned if a callback is given.
-   */
-  getAlbums: function(albumIds, options, callback) {
-    // In case someone is using a version where options parameter did not exist.
-    var actualCallback, actualOptions;
-    if (typeof options === 'function' && !callback) {
-      actualCallback = options;
-      actualOptions = {};
-    } else {
-      actualCallback = callback;
-      actualOptions = options;
-    }
-
-    return WebApiRequest.builder(this.getAccessToken())
-      .withPath('/v1/albums')
-      .withQueryParameters(
-        {
-          ids: albumIds.join(',')
-        },
-        actualOptions
-      )
-      .build()
-      .execute(HttpManager.get, actualCallback);
-  },
-
-  /**
-   * Look up an artist.
-   * @param {string} artistId The artist's ID.
-   * @param {requestCallback} [callback] Optional callback method to be called instead of the promise.
-   * @example api.getArtist('1u7kkVrr14iBvrpYnZILJR').then(...)
-   * @returns {Promise|undefined} A promise that if successful, returns an object containing information
-   *          about the artist. Not returned if a callback is given.
-   */
-  getArtist: function(artistId, callback) {
-    return WebApiRequest.builder(this.getAccessToken())
-      .withPath('/v1/artists/' + artistId)
-      .build()
-      .execute(HttpManager.get, callback);
-  },
-
-  /**
-   * Look up several artists.
-   * @param {string[]} artistIds The IDs of the artists.
-   * @param {requestCallback} [callback] Optional callback method to be called instead of the promise.
-   * @example getArtists(['0oSGxfWSnnOXhD2fKuz2Gy', '3dBVyJ7JuOMt4GE9607Qin']).then(...)
-   * @returns {Promise|undefined} A promise that if successful, returns an object containing information
-   *          about the artists. Not returned if a callback is given.
-   */
-  getArtists: function(artistIds, callback) {
-    return WebApiRequest.builder(this.getAccessToken())
-      .withPath('/v1/artists')
-      .withQueryParameters({
-        ids: artistIds.join(',')
-      })
-      .build()
-      .execute(HttpManager.get, callback);
-  },
-
-  /**
-   * Search for music entities of certain types.
-   * @param {string} query The search query.
-   * @param {string[]} types An array of item types to search across.
-   * Valid types are: 'album', 'artist', 'playlist', and 'track'.
-   * @param {Object} [options] The possible options, e.g. limit, offset.
-   * @param {requestCallback} [callback] Optional callback method to be called instead of the promise.
-   * @example search('Abba', ['track', 'playlist'], { limit : 5, offset : 1 }).then(...)
-   * @returns {Promise|undefined} A promise that if successful, returns an object containing the
-   *          search results. The result is paginated. If the promise is rejected,
-   *          it contains an error object. Not returned if a callback is given.
-   */
-  search: function(query, types, options, callback) {
-    return WebApiRequest.builder(this.getAccessToken())
-      .withPath('/v1/search/')
-      .withQueryParameters(
-        {
-          type: types.join(','),
-          q: query
-        },
-        options
-      )
-      .build()
-      .execute(HttpManager.get, callback);
-  },
-
-  /**
-   * Search for an album.
-   * @param {string} query The search query.
-   * @param {Object} [options] The possible options, e.g. limit, offset.
-   * @param {requestCallback} [callback] Optional callback method to be called instead of the promise.
-   * @example searchAlbums('Space Oddity', { limit : 5, offset : 1 }).then(...)
-   * @returns {Promise|undefined} A promise that if successful, returns an object containing the
-   *          search results. The result is paginated. If the promise is rejected,
-   *          it contains an error object. Not returned if a callback is given.
-   */
-  searchAlbums: function(query, options, callback) {
-    return this.search(query, ['album'], options, callback);
-  },
-
-  /**
-   * Search for an artist.
-   * @param {string} query The search query.
-   * @param {Object} [options] The possible options, e.g. limit, offset.
-   * @param {requestCallback} [callback] Optional callback method to be called instead of the promise.
-   * @example searchArtists('David Bowie', { limit : 5, offset : 1 }).then(...)
-   * @returns {Promise|undefined} A promise that if successful, returns an object containing the
-   *          search results. The result is paginated. If the promise is rejected,
-   *          it contains an error object. Not returned if a callback is given.
-   */
-  searchArtists: function(query, options, callback) {
-    return this.search(query, ['artist'], options, callback);
-  },
-
-  /**
-   * Search for a track.
-   * @param {string} query The search query.
-   * @param {Object} [options] The possible options, e.g. limit, offset.
-   * @param {requestCallback} [callback] Optional callback method to be called instead of the promise.
-   * @example searchTracks('Mr. Brightside', { limit : 3, offset : 2 }).then(...)
-   * @returns {Promise|undefined} A promise that if successful, returns an object containing the
-   *          search results. The result is paginated. If the promise is rejected,
-   *          it contains an error object. Not returned if a callback is given.
-   */
-  searchTracks: function(query, options, callback) {
-    return this.search(query, ['track'], options, callback);
-  },
-
-  /**
-   * Search for playlists.
-   * @param {string} query The search query.
-   * @param {Object} options The possible options.
-   * @param {requestCallback} [callback] Optional callback method to be called instead of the promise.
-   * @example searchPlaylists('workout', { limit : 1, offset : 0 }).then(...)
-   * @returns {Promise|undefined} A promise that if successful, returns an object containing the
-   *          search results. The result is paginated. If the promise is rejected,
-   *          it contains an error object. Not returned if a callback is given.
-   */
-  searchPlaylists: function(query, options, callback) {
-    return this.search(query, ['playlist'], options, callback);
-  },
-
-  /**
-   * Get an artist's albums.
-   * @param {string} artistId The artist's ID.
-   * @options {Object} [options] The possible options, e.g. limit, offset.
-   * @param {requestCallback} [callback] Optional callback method to be called instead of the promise.
-   * @example getArtistAlbums('0oSGxfWSnnOXhD2fKuz2Gy', { album_type : 'album', country : 'GB', limit : 2, offset : 5 }).then(...)
-   * @returns {Promise|undefined} A promise that if successful, returns an object containing the albums
-   *          for the given artist. The result is paginated. If the promise is rejected,
-   *          it contains an error object. Not returned if a callback is given.
-   */
-  getArtistAlbums: function(artistId, options, callback) {
-    return WebApiRequest.builder(this.getAccessToken())
-      .withPath('/v1/artists/' + artistId + '/albums')
-      .withQueryParameters(options)
-      .build()
-      .execute(HttpManager.get, callback);
-  },
-
-  /**
-   * Get the tracks of an album.
-   * @param albumId the album's ID.
-   * @options {Object} [options] The possible options, e.g. limit.
-   * @param {requestCallback} [callback] Optional callback method to be called instead of the promise.
-   * @example getAlbumTracks('41MnTivkwTO3UUJ8DrqEJJ', { limit : 5, offset : 1 }).then(...)
-   * @returns {Promise|undefined} A promise that if successful, returns an object containing the
-   *                    tracks in the album. The result is paginated. If the promise is rejected.
-   *                    it contains an error object. Not returned if a callback is given.
-   */
-  getAlbumTracks: function(albumId, options, callback) {
-    return WebApiRequest.builder(this.getAccessToken())
-      .withPath('/v1/albums/' + albumId + '/tracks')
-      .withQueryParameters(options)
-      .build()
-      .execute(HttpManager.get, callback);
-  },
-
-  /**
-   * Get an artist's top tracks.
-   * @param {string} artistId The artist's ID.
-   * @param {string} country The country/territory where the tracks are most popular. (format: ISO 3166-1 alpha-2)
-   * @param {requestCallback} [callback] Optional callback method to be called instead of the promise.
-   * @example getArtistTopTracks('0oSGxfWSnnOXhD2fKuz2Gy', 'GB').then(...)
-   * @returns {Promise|undefined} A promise that if successful, returns an object containing the
-   *          artist's top tracks in the given country. If the promise is rejected,
-   *          it contains an error object. Not returned if a callback is given.
-   */
-  getArtistTopTracks: function(artistId, country, callback) {
-    return WebApiRequest.builder(this.getAccessToken())
-      .withPath('/v1/artists/' + artistId + '/top-tracks')
-      .withQueryParameters({
-        country: country
-      })
-      .build()
-      .execute(HttpManager.get, callback);
-  },
-
-  /**
-   * Get related artists.
-   * @param {string} artistId The artist's ID.
-   * @param {requestCallback} [callback] Optional callback method to be called instead of the promise.
-   * @example getArtistRelatedArtists('0oSGxfWSnnOXhD2fKuz2Gy').then(...)
-   * @returns {Promise|undefined} A promise that if successful, returns an object containing the
-   *          related artists. If the promise is rejected, it contains an error object. Not returned if a callback is given.
-   */
-  getArtistRelatedArtists: function(artistId, callback) {
-    return WebApiRequest.builder(this.getAccessToken())
-      .withPath('/v1/artists/' + artistId + '/related-artists')
-      .build()
-      .execute(HttpManager.get, callback);
-  },
-
-  /**
-   * Get information about a user.
-   * @param userId The user ID.
-   * @param {requestCallback} [callback] Optional callback method to be called instead of the promise.
-   * @example getUser('thelinmichael').then(...)
-   * @returns {Promise|undefined} A promise that if successful, resolves to an object
-   *          containing information about the user. If the promise is
-   *          rejected, it contains an error object. Not returned if a callback is given.
-   */
-  getUser: function(userId, callback) {
-    return WebApiRequest.builder(this.getAccessToken())
-      .withPath('/v1/users/' + encodeURIComponent(userId))
-      .build()
-      .execute(HttpManager.get, callback);
-  },
-
-  /**
-   * Get information about the user that has signed in (the current user).
-   * @param {requestCallback} [callback] Optional callback method to be called instead of the promise.
-   * @example getMe().then(...)
-   * @returns {Promise|undefined} A promise that if successful, resolves to an object
-   *          containing information about the user. The amount of information
-   *          depends on the permissions given by the user. If the promise is
-   *          rejected, it contains an error object. Not returned if a callback is given.
-   */
-  getMe: function(callback) {
-    return WebApiRequest.builder(this.getAccessToken())
-      .withPath('/v1/me')
-      .build()
-      .execute(HttpManager.get, callback);
-  },
-
-  /**
-   * Get a user's playlists.
-   * @param {string} userId An optional id of the user. If you know the Spotify URI it is easy
-   * to find the id (e.g. spotify:user:<here_is_the_id>). If not provided, the id of the user that granted
-   * the permissions will be used.
-   * @param {Object} [options] The options supplied to this request.
-   * @param {requestCallback} [callback] Optional callback method to be called instead of the promise.
-   * @example getUserPlaylists('thelinmichael').then(...)
-   * @returns {Promise|undefined} A promise that if successful, resolves to an object containing
-   *          a list of playlists. If rejected, it contains an error object. Not returned if a callback is given.
-   */
-  getUserPlaylists: function(userId, options, callback) {
-    var path;
-    if (typeof userId === 'string') {
-      path = '/v1/users/' + encodeURIComponent(userId) + '/playlists';
-    } else if (typeof userId === 'object') {
-      callback = options;
-      options = userId;
-      path = '/v1/me/playlists';
-    } /* undefined */ else {
-      path = '/v1/me/playlists';
-    }
-
-    return WebApiRequest.builder(this.getAccessToken())
-      .withPath(path)
-      .withQueryParameters(options)
-      .build()
-      .execute(HttpManager.get, callback);
-  },
-
-  /**
-   * Get a playlist.
-   * @param {string} playlistId The playlist's ID.
-   * @param {Object} [options] The options supplied to this request.
-   * @param {requestCallback} [callback] Optional callback method to be called instead of the promise.
-   * @example getPlaylist('thelinmichael', '3EsfV6XzCHU8SPNdbnFogK').then(...)
-   * @returns {Promise|undefined} A promise that if successful, resolves to an object containing
-   *          the playlist. If rejected, it contains an error object. Not returned if a callback is given.
-   */
-  getPlaylist: function(playlistId, options, callback) {
-    return WebApiRequest.builder(this.getAccessToken())
-      .withPath('/v1/playlists/' + playlistId)
-      .withQueryParameters(options)
-      .build()
-      .execute(HttpManager.get, callback);
-  },
-
-  /**
-   * Get tracks in a playlist.
-   * @param {string} playlistId The playlist's ID.
-   * @param {Object} [options] Optional options, such as fields.
-   * @param {requestCallback} [callback] Optional callback method to be called instead of the promise.
-   * @example getPlaylistTracks('thelinmichael', '3ktAYNcRHpazJ9qecm3ptn').then(...)
-   * @returns {Promise|undefined} A promise that if successful, resolves to an object that containing
-   * the tracks in the playlist. If rejected, it contains an error object. Not returned if a callback is given.
-   */
-  getPlaylistTracks: function(playlistId, options, callback) {
-    return WebApiRequest.builder(this.getAccessToken())
-      .withPath('/v1/playlists/' + playlistId + '/tracks')
-      .withQueryParameters(options)
-      .build()
-      .execute(HttpManager.get, callback);
-  },
-
-  /**
-   * Create a playlist.
-   * @param {string} userId The playlist's owner's user ID.
-   * @param {string} playlistName The name of the playlist.
-   * @param {Object} [options] The possible options, currently only public.
-   * @param {requestCallback} [callback] Optional callback method to be called instead of the promise.
-   * @example createPlaylist('thelinmichael', 'My cool playlist!', { public : false }).then(...)
-   * @returns {Promise|undefined} A promise that if successful, resolves to an object containing information about the
-   *          created playlist. If rejected, it contains an error object. Not returned if a callback is given.
-   */
-  createPlaylist: function(userId, playlistName, options, callback) {
-    // In case someone is using a version where options parameter did not exist.
-    var actualCallback;
-    if (typeof options === 'function' && !callback) {
-      actualCallback = options;
-    } else {
-      actualCallback = callback;
-    }
-
-    var actualOptions = { name: playlistName };
-    if (typeof options === 'object') {
-      Object.keys(options).forEach(function(key) {
-        actualOptions[key] = options[key];
-      });
-    }
-
-    return WebApiRequest.builder(this.getAccessToken())
-      .withPath('/v1/users/' + encodeURIComponent(userId) + '/playlists')
-      .withHeaders({ 'Content-Type': 'application/json' })
-      .withBodyParameters(actualOptions)
-      .build()
-      .execute(HttpManager.post, actualCallback);
-  },
-
-  /**
-   * Follow a playlist.
-   * @param {string} playlistId The playlist's ID
-   * @param {Object} [options] The possible options, currently only public.
-   * @param {requestCallback} [callback] Optional callback method to be called instead of the promise.
-   * @returns {Promise|undefined} A promise that if successful, simply resolves to an empty object. If rejected,
-   * it contains an error object. Not returned if a callback is given.
-   */
-  followPlaylist: function(playlistId, options, callback) {
-    return WebApiRequest.builder(this.getAccessToken())
-      .withPath('/v1/playlists/' + playlistId + '/followers')
-      .withHeaders({ 'Content-Type': 'application/json' })
-      .withBodyParameters(options)
-      .build()
-      .execute(HttpManager.put, callback);
-  },
-
-  /**
-   * Unfollow a playlist.
-   * @param {string} playlistId The playlist's ID
-   * @param {Object} [options] The possible options, currently only public.
-   * @param {requestCallback} [callback] Optional callback method to be called instead of the promise.
-   * @returns {Promise|undefined} A promise that if successful, simply resolves to an empty object. If rejected,
-   * it contains an error object. Not returned if a callback is given.
-   */
-  unfollowPlaylist: function(playlistId, callback) {
-    return WebApiRequest.builder(this.getAccessToken())
-      .withPath('/v1/playlists/' + playlistId + '/followers')
-      .withHeaders({ 'Content-Type': 'application/json' })
-      .build()
-      .execute(HttpManager.del, callback);
-  },
-
-  /**
-   * Change playlist details.
-   * @param {string} playlistId The playlist's ID
-   * @param {Object} [options] The possible options, e.g. name, public.
-   * @param {requestCallback} [callback] Optional callback method to be called instead of the promise.
-   * @example changePlaylistDetails('thelinmichael', '3EsfV6XzCHU8SPNdbnFogK', {name: 'New name', public: true}).then(...)
-   * @returns {Promise|undefined} A promise that if successful, simply resolves to an empty object. If rejected,
-   * it contains an error object. Not returned if a callback is given.
-   */
-  changePlaylistDetails: function(playlistId, options, callback) {
-    return WebApiRequest.builder(this.getAccessToken())
-      .withPath('/v1/playlists/' + playlistId)
-      .withHeaders({ 'Content-Type': 'application/json' })
-      .withBodyParameters(options)
-      .build()
-      .execute(HttpManager.put, callback);
-  },
-
-  /**
-   * Replace the image used to represent a specific playlist.
-   * @param {string} playlistId The playlist's ID
-   * @param {string} base64URI Base64 encoded JPEG image data, maximum payload size is 256 KB
-   * @param {requestCallback} [callback] Optional callback method to be called instead of the promise.
-   * @example uploadCustomPlaylistCoverImage('thelinmichael', '3EsfV6XzCHU8SPNdbnFogK', 'longbase64uri').then(...)
-   * @returns {Promise|undefined} A promise that if successful, simply resolves to an empty object. If rejected,
-   * it contains an error object. Not returned if a callback is given.
-   */
-  uploadCustomPlaylistCoverImage: function(playlistId, base64URI, callback) {
-    return WebApiRequest.builder(this.getAccessToken())
-      .withPath('/v1/playlists/' + playlistId + '/images')
-      .withHeaders({ 'Content-Type': 'image/jpeg' })
-      .withBodyParameters(base64URI)
-      .build()
-      .execute(HttpManager.put, callback);
-  },
-
-  /**
-   * Add tracks to a playlist.
-   * @param {string} playlistId The playlist's ID
-   * @param {string[]} tracks URIs of the tracks to add to the playlist.
-   * @param {Object} [options] Options, position being the only one.
-   * @param {requestCallback} [callback] Optional callback method to be called instead of the promise.
-   * @example addTracksToPlaylist('thelinmichael', '3EsfV6XzCHU8SPNdbnFogK',
-              '["spotify:track:4iV5W9uYEdYUVa79Axb7Rh", "spotify:track:1301WleyT98MSxVHPZCA6M"]').then(...)
-   * @returns {Promise|undefined} A promise that if successful returns an object containing a snapshot_id. If rejected,
-   * it contains an error object. Not returned if a callback is given.
-   */
-  addTracksToPlaylist: function(playlistId, tracks, options, callback) {
-    return WebApiRequest.builder(this.getAccessToken())
-      .withPath('/v1/playlists/' + playlistId + '/tracks')
-      .withHeaders({ 'Content-Type': 'application/json' })
-      .withQueryParameters(options)
-      .withBodyParameters({
-        uris: tracks
-      })
-      .build()
-      .execute(HttpManager.post, callback);
-  },
-
-  /**
-   * Remove tracks from a playlist.
-   * @param {string} playlistId The playlist's ID
-   * @param {Object[]} tracks An array of objects containing a property called uri with the track URI (String), and
-   * a an optional property called positions (int[]), e.g. { uri : "spotify:track:491rM2JN8KvmV6p0oDDuJT", positions : [0, 15] }
-   * @param {Object} options Options, snapshot_id being the only one.
-   * @param {requestCallback} [callback] Optional callback method to be called instead of the promise.
-   * @returns {Promise|undefined} A promise that if successful returns an object containing a snapshot_id. If rejected,
-   * it contains an error object. Not returned if a callback is given.
-   */
-  removeTracksFromPlaylist: function(playlistId, tracks, options, callback) {
-    return WebApiRequest.builder(this.getAccessToken())
-      .withPath('/v1/playlists/' + playlistId + '/tracks')
-      .withHeaders({ 'Content-Type': 'application/json' })
-      .withBodyParameters(
-        {
-          tracks: tracks
-        },
-        options
-      )
-      .build()
-      .execute(HttpManager.del, callback);
-  },
-
-  /**
-   * Remove tracks from a playlist by position instead of specifying the tracks' URIs.
-   * @param {string} playlistId The playlist's ID
-   * @param {int[]} positions The positions of the tracks in the playlist that should be removed
-   * @param {string} snapshot_id The snapshot ID, or version, of the playlist. Required
-   * @param {requestCallback} [callback] Optional callback method to be called instead of the promise.
-   * @returns {Promise|undefined} A promise that if successful returns an object containing a snapshot_id. If rejected,
-   * it contains an error object. Not returned if a callback is given.
-   */
-  removeTracksFromPlaylistByPosition: function(
-    playlistId,
-    positions,
-    snapshotId,
-    callback
-  ) {
-    return WebApiRequest.builder(this.getAccessToken())
-      .withPath('/v1/playlists/' + playlistId + '/tracks')
-      .withHeaders({ 'Content-Type': 'application/json' })
-      .withBodyParameters({
-        positions: positions,
-        snapshot_id: snapshotId
-      })
-      .build()
-      .execute(HttpManager.del, callback);
-  },
-
-  /**
-   * Replace tracks in a playlist.
-   * @param {string} playlistId The playlist's ID
-   * @param {Object[]} uris An array of track URIs (strings)
-   * @param {requestCallback} [callback] Optional callback method to be called instead of the promise.
-   * @returns {Promise|undefined} A promise that if successful returns an empty object. If rejected,
-   * it contains an error object. Not returned if a callback is given.
-   */
-  replaceTracksInPlaylist: function(playlistId, uris, callback) {
-    return WebApiRequest.builder(this.getAccessToken())
-      .withPath('/v1/playlists/' + playlistId + '/tracks')
-      .withHeaders({ 'Content-Type': 'application/json' })
-      .withBodyParameters({
-        uris: uris
-      })
-      .build()
-      .execute(HttpManager.put, callback);
-  },
-
-  /**
-   * Reorder tracks in a playlist.
-   * @param {string} playlistId The playlist's ID
-   * @param {int} rangeStart The position of the first track to be reordered.
-   * @param {int} insertBefore The position where the tracks should be inserted.
-   * @param {Object} options Optional parameters, i.e. range_length and snapshot_id.
-   * @param {requestCallback} [callback] Optional callback method to be called instead of the promise.
-   * @returns {Promise|undefined} A promise that if successful returns an object containing a snapshot_id. If rejected,
-   * it contains an error object. Not returned if a callback is given.
-   */
-  reorderTracksInPlaylist: function(
-    playlistId,
-    rangeStart,
-    insertBefore,
-    options,
-    callback
-  ) {
-    return WebApiRequest.builder(this.getAccessToken())
-      .withPath('/v1/playlists/' + playlistId + '/tracks')
-      .withHeaders({ 'Content-Type': 'application/json' })
-      .withBodyParameters(
-        {
-          range_start: rangeStart,
-          insert_before: insertBefore
-        },
-        options
-      )
-      .build()
-      .execute(HttpManager.put, callback);
-  },
-
-  /**
-   * Get audio features for a single track identified by its unique Spotify ID.
-   * @param {string} trackId The track ID
-   * @param {requestCallback} [callback] Optional callback method to be called instead of the promise.
-   * @example getAudioFeaturesForTrack('38P3Q4QcdjQALGF2Z92BmR').then(...)
-   * @returns {Promise|undefined} A promise that if successful, resolves to an object
-   *          containing information about the audio features. If the promise is
-   *          rejected, it contains an error object. Not returned if a callback is given.
-   */
-  getAudioFeaturesForTrack: function(trackId, callback) {
-    return WebApiRequest.builder(this.getAccessToken())
-      .withPath('/v1/audio-features/' + trackId)
-      .build()
-      .execute(HttpManager.get, callback);
-  },
-
-  /**
-   * Get audio analysis for a single track identified by its unique Spotify ID.
-   * @param {string} trackId The track ID
-   * @param {requestCallback} [callback] Optional callback method to be called instead of the promise.
-   * @example getAudioAnalysisForTrack('38P3Q4QcdjQALGF2Z92BmR').then(...)
-   * @returns {Promise|undefined} A promise that if successful, resolves to an object
-   *          containing information about the audio analysis. If the promise is
-   *          rejected, it contains an error object. Not returned if a callback is given.
-   */
-  getAudioAnalysisForTrack: function(trackId, callback) {
-    return WebApiRequest.builder(this.getAccessToken())
-      .withPath('/v1/audio-analysis/' + trackId)
-      .build()
-      .execute(HttpManager.get, callback);
-  },
-
-  /**
-   * Get audio features for multiple tracks identified by their unique Spotify ID.
-   * @param {string[]} trackIds The track IDs
-   * @param {requestCallback} [callback] Optional callback method to be called instead of the promise.
-   * @example getAudioFeaturesForTracks(['38P3Q4QcdjQALGF2Z92BmR', '2HO2bnoMrpnZUbUqiilLHi']).then(...)
-   * @returns {Promise|undefined} A promise that if successful, resolves to an object
-   *          containing information about the audio features for the tracks. If the promise is
-   *          rejected, it contains an error object. Not returned if a callback is given.
-   */
-  getAudioFeaturesForTracks: function(trackIds, callback) {
-    return WebApiRequest.builder(this.getAccessToken())
-      .withPath('/v1/audio-features')
-      .withQueryParameters({
-        ids: trackIds.join(',')
-      })
-      .build()
-      .execute(HttpManager.get, callback);
-  },
-
-  /**
-   * Create a playlist-style listening experience based on seed artists, tracks and genres.
-   * @param {Object} [options] The options supplied to this request.
-   * @param {requestCallback} [callback] Optional callback method to be called instead of the promise.
-   * @example getRecommendations({ min_energy: 0.4, seed_artists: ['6mfK6Q2tzLMEchAr0e9Uzu', '4DYFVNKZ1uixa6SQTvzQwJ'], min_popularity: 50 }).then(...)
-   * @returns {Promise|undefined} A promise that if successful, resolves to an object containing
-   *          a list of tracks and a list of seeds. If rejected, it contains an error object. Not returned if a callback is given.
-   */
-  getRecommendations: function(options, callback) {
-    var _opts = {};
-    var optionsOfTypeArray = ['seed_artists', 'seed_genres', 'seed_tracks'];
-    for (var option in options) {
-      if (options.hasOwnProperty(option)) {
-        if (
-          optionsOfTypeArray.indexOf(option) !== -1 &&
-          Object.prototype.toString.call(options[option]) === '[object Array]'
-        ) {
-          _opts[option] = options[option].join(',');
-        } else {
-          _opts[option] = options[option];
+  var _extend = function() {
+    var args = Array.prototype.slice.call(arguments);
+    var target = args[0];
+    var objects = args.slice(1);
+    target = target || {};
+    objects.forEach(function(object) {
+      for (var j in object) {
+        if (object.hasOwnProperty(j)) {
+          target[j] = object[j];
         }
       }
-    }
-
-    return WebApiRequest.builder(this.getAccessToken())
-      .withPath('/v1/recommendations')
-      .withQueryParameters(_opts)
-      .build()
-      .execute(HttpManager.get, callback);
-  },
-
-  /**
-   * Retrieve a list of available genres seed parameter values for recommendations.
-   * @param {requestCallback} [callback] Optional callback method to be called instead of the promise.
-   * @example getAvailableGenreSeeds().then(...)
-   * @returns {Promise|undefined} A promise that if successful, resolves to an object containing
-   *          a list of available genres to be used as seeds for recommendations.
-   *          If rejected, it contains an error object. Not returned if a callback is given.
-   */
-  getAvailableGenreSeeds: function(callback) {
-    return WebApiRequest.builder(this.getAccessToken())
-      .withPath('/v1/recommendations/available-genre-seeds')
-      .build()
-      .execute(HttpManager.get, callback);
-  },
-
-  /**
-   * Retrieve a URL where the user can give the application permissions.
-   * @param {string[]} scopes The scopes corresponding to the permissions the application needs.
-   * @param {string} state A parameter that you can use to maintain a value between the request and the callback to redirect_uri.It is useful to prevent CSRF exploits.
-   * @param {boolean} showDialog A parameter that you can use to force the user to approve the app on each login rather than being automatically redirected.
-   * @returns {string} The URL where the user can give application permissions.
-   */
-  createAuthorizeURL: function(scopes, state, showDialog) {
-    return AuthenticationRequest.builder()
-      .withPath('/authorize')
-      .withQueryParameters({
-        client_id: this.getClientId(),
-        response_type: 'code',
-        redirect_uri: this.getRedirectURI(),
-        scope: scopes.join('%20'),
-        state: state,
-        show_dialog: showDialog && !!showDialog
-      })
-      .build()
-      .getURL();
-  },
-
-  /**
-   * Retrieve the tracks that are saved to the authenticated users Your Music library.
-   * @param {Object} [options] Options, being market, limit, and/or offset.
-   * @param {requestCallback} [callback] Optional callback method to be called instead of the promise.
-   * @returns {Promise|undefined} A promise that if successful, resolves to an object containing a paging object which in turn contains
-   *          playlist track objects. Not returned if a callback is given.
-   */
-  getMySavedTracks: function(options, callback) {
-    return WebApiRequest.builder(this.getAccessToken())
-      .withPath('/v1/me/tracks')
-      .withQueryParameters(options)
-      .build()
-      .execute(HttpManager.get, callback);
-  },
-
-  /**
-   * Check if one or more tracks is already saved in the current Spotify user’s “Your Music” library.
-   * @param {string[]} trackIds The track IDs
-   * @param {requestCallback} [callback] Optional callback method to be called instead of the promise.
-   * @returns {Promise|undefined} A promise that if successful, resolves into an array of booleans. The order
-   * of the returned array's elements correspond to the track ID in the request.
-   * The boolean value of true indicates that the track is part of the user's library, otherwise false.
-   * Not returned if a callback is given.
-   */
-  containsMySavedTracks: function(trackIds, callback) {
-    return WebApiRequest.builder(this.getAccessToken())
-      .withPath('/v1/me/tracks/contains')
-      .withQueryParameters({
-        ids: trackIds.join(',')
-      })
-      .build()
-      .execute(HttpManager.get, callback);
-  },
-
-  /**
-   * Remove a track from the authenticated user's Your Music library.
-   * @param {string[]} trackIds The track IDs
-   * @param {requestCallback} [callback] Optional callback method to be called instead of the promise.
-   * @returns {Promise|undefined} A promise that if successful returns null, otherwise an error.
-   * Not returned if a callback is given.
-   */
-  removeFromMySavedTracks: function(trackIds, callback) {
-    return WebApiRequest.builder(this.getAccessToken())
-      .withPath('/v1/me/tracks')
-      .withHeaders({ 'Content-Type': 'application/json' })
-      .withBodyParameters({ ids: trackIds })
-      .build()
-      .execute(HttpManager.del, callback);
-  },
-
-  /**
-   * Add a track from the authenticated user's Your Music library.
-   * @param {string[]} trackIds The track IDs
-   * @param {requestCallback} [callback] Optional callback method to be called instead of the promise.
-   * @returns {Promise|undefined} A promise that if successful returns null, otherwise an error. Not returned if a callback is given.
-   */
-  addToMySavedTracks: function(trackIds, callback) {
-    return WebApiRequest.builder(this.getAccessToken())
-      .withPath('/v1/me/tracks')
-      .withHeaders({ 'Content-Type': 'application/json' })
-      .withBodyParameters({ ids: trackIds })
-      .build()
-      .execute(HttpManager.put, callback);
-  },
-
-  /**
-   * Remove an album from the authenticated user's Your Music library.
-   * @param {string[]} albumIds The album IDs
-   * @param {requestCallback} [callback] Optional callback method to be called instead of the promise.
-   * @returns {Promise|undefined} A promise that if successful returns null, otherwise an error.
-   * Not returned if a callback is given.
-   */
-  removeFromMySavedAlbums: function(albumIds, callback) {
-    return WebApiRequest.builder(this.getAccessToken())
-      .withPath('/v1/me/albums')
-      .withHeaders({ 'Content-Type': 'application/json' })
-      .withBodyParameters(albumIds)
-      .build()
-      .execute(HttpManager.del, callback);
-  },
-
-  /**
-   * Add an album from the authenticated user's Your Music library.
-   * @param {string[]} albumIds The track IDs
-   * @param {requestCallback} [callback] Optional callback method to be called instead of the promise.
-   * @returns {Promise|undefined} A promise that if successful returns null, otherwise an error. Not returned if a callback is given.
-   */
-  addToMySavedAlbums: function(albumIds, callback) {
-    return WebApiRequest.builder(this.getAccessToken())
-      .withPath('/v1/me/albums')
-      .withHeaders({ 'Content-Type': 'application/json' })
-      .withBodyParameters(albumIds)
-      .build()
-      .execute(HttpManager.put, callback);
-  },
-
-  /**
-   * Retrieve the albums that are saved to the authenticated users Your Music library.
-   * @param {Object} [options] Options, being market, limit, and/or offset.
-   * @param {requestCallback} [callback] Optional callback method to be called instead of the promise.
-   * @returns {Promise|undefined} A promise that if successful, resolves to an object containing a paging object which in turn contains
-   *          playlist album objects. Not returned if a callback is given.
-   */
-  getMySavedAlbums: function(options, callback) {
-    return WebApiRequest.builder(this.getAccessToken())
-      .withPath('/v1/me/albums')
-      .withQueryParameters(options)
-      .build()
-      .execute(HttpManager.get, callback);
-  },
-
-  /**
-   * Check if one or more albums is already saved in the current Spotify user’s “Your Music” library.
-   * @param {string[]} albumIds The album IDs
-   * @param {requestCallback} [callback] Optional callback method to be called instead of the promise.
-   * @returns {Promise|undefined} A promise that if successful, resolves into an array of booleans. The order
-   * of the returned array's elements correspond to the album ID in the request.
-   * The boolean value of true indicates that the album is part of the user's library, otherwise false.
-   * Not returned if a callback is given.
-   */
-  containsMySavedAlbums: function(albumIds, callback) {
-    return WebApiRequest.builder(this.getAccessToken())
-      .withPath('/v1/me/albums/contains')
-      .withQueryParameters({
-        ids: albumIds.join(',')
-      })
-      .build()
-      .execute(HttpManager.get, callback);
-  },
-
-  /**
-   * Get the current user's top artists based on calculated affinity.
-   * @param {Object} [options] Options, being time_range, limit, offset.
-   * @param {requestCallback} [callback] Optional callback method to be called instead of the promise.
-   * @returns {Promise|undefined} A promise that if successful, resolves into a paging object of artists,
-   *          otherwise an error. Not returned if a callback is given.
-   */
-  getMyTopArtists: function(options, callback) {
-    return WebApiRequest.builder(this.getAccessToken())
-      .withPath('/v1/me/top/artists')
-      .withQueryParameters(options)
-      .build()
-      .execute(HttpManager.get, callback);
-  },
-
-  /**
-   * Get the current user's top tracks based on calculated affinity.
-   * @param {Object} [options] Options, being time_range, limit, offset.
-   * @param {requestCallback} [callback] Optional callback method to be called instead of the promise.
-   * @returns {Promise|undefined} A promise that if successful, resolves into a paging object of tracks,
-   *          otherwise an error. Not returned if a callback is given.
-   */
-  getMyTopTracks: function(options, callback) {
-    return WebApiRequest.builder(this.getAccessToken())
-      .withPath('/v1/me/top/tracks')
-      .withQueryParameters(options)
-      .build()
-      .execute(HttpManager.get, callback);
-  },
-
-  /**
-   * Get the Current User's Recently Played Tracks
-   * @param {Object} [options] Options, being type, after, limit, before.
-   * @param {requestCallback} [callback] Optional callback method to be called instead of the promise.
-   * @returns {Promise|undefined} A promise that if successful, resolves into a paging object of tracks,
-   *          otherwise an error. Not returned if a callback is given.
-   */
-  getMyRecentlyPlayedTracks: function(options, callback) {
-    return WebApiRequest.builder(this.getAccessToken())
-      .withPath('/v1/me/player/recently-played')
-      .withQueryParameters(options)
-      .build()
-      .execute(HttpManager.get, callback);
-  },
-
-  /**
-   * Get the Current User's Connect Devices
-   * @param {requestCallback} [callback] Optional callback method to be called instead of the promise.
-   * @returns {Promise|undefined} A promise that if successful, resolves into a paging object of tracks,
-   *          otherwise an error. Not returned if a callback is given.
-   */
-  getMyDevices: function(callback) {
-    return WebApiRequest.builder(this.getAccessToken())
-      .withPath('/v1/me/player/devices')
-      .build()
-      .execute(HttpManager.get, callback);
-  },
-
-  /**
-   * Get the Current User's Currently Playing Track.
-   * @param {Object} [options] Options, being market.
-   * @param {requestCallback} [callback] Optional callback method to be called instead of the promise.
-   * @returns {Promise|undefined} A promise that if successful, resolves into a paging object of tracks,
-   *          otherwise an error. Not returned if a callback is given.
-   */
-  getMyCurrentPlayingTrack: function(options, callback) {
-    return WebApiRequest.builder(this.getAccessToken())
-      .withPath('/v1/me/player/currently-playing')
-      .withQueryParameters(options)
-      .build()
-      .execute(HttpManager.get, callback);
-  },
-
-  /**
-   * Get the Current User's Current Playback State
-   * @param {Object} [options] Options, being market.
-   * @param {requestCallback} [callback] Optional callback method to be called instead of the promise.
-   * @returns {Promise|undefined} A promise that if successful, resolves into a paging object of tracks,
-   *          otherwise an error. Not returned if a callback is given.
-   */
-  getMyCurrentPlaybackState: function(options, callback) {
-    return WebApiRequest.builder(this.getAccessToken())
-      .withPath('/v1/me/player')
-      .withQueryParameters(options)
-      .build()
-      .execute(HttpManager.get, callback);
-  },
-
-  /**
-   * Transfer a User's Playback
-   * @param {Object} [options] Options, being market.
-   * @param {requestCallback} [callback] Optional callback method to be called instead of the promise.
-   * @returns {Promise|undefined} A promise that if successful, resolves into a paging object of tracks,
-   *          otherwise an error. Not returned if a callback is given.
-   */
-  transferMyPlayback: function(options, callback) {
-    return WebApiRequest.builder(this.getAccessToken())
-      .withPath('/v1/me/player')
-      .withHeaders({ 'Content-Type': 'application/json' })
-      .withBodyParameters({
-        device_ids: options.deviceIds,
-        play: !!options.play
-      })
-      .build()
-      .execute(HttpManager.put, callback);
-  },
-
-  /**
-   * Starts o Resumes the Current User's Playback
-   * @param {Object} [options] Options, being device_id, context_uri, offset, uris.
-   * @param {requestCallback} [callback] Optional callback method to be called instead of the promise.
-   * @example playbackResume({context_uri: 'spotify:album:5ht7ItJgpBH7W6vJ5BqpPr'}).then(...)
-   * @returns {Promise|undefined} A promise that if successful, resolves into a paging object of tracks,
-   *          otherwise an error. Not returned if a callback is given.
-   */
-  play: function(options, callback) {
-    /*jshint camelcase: false */
-    var _options = options || {};
-    var queryParams = _options.device_id
-      ? { device_id: _options.device_id }
-      : null;
-    var postData = {};
-    ['context_uri', 'uris', 'offset'].forEach(function(field) {
-      if (field in _options) {
-        postData[field] = _options[field];
-      }
     });
-    return WebApiRequest.builder(this.getAccessToken())
-      .withPath('/v1/me/player/play')
-      .withQueryParameters(queryParams)
-      .withHeaders({ 'Content-Type': 'application/json' })
-      .withBodyParameters(postData)
-      .build()
-      .execute(HttpManager.put, callback);
-  },
+    return target;
+  };
+
+  var _buildUrl = function(url, parameters) {
+    var qs = '';
+    for (var key in parameters) {
+      if (parameters.hasOwnProperty(key)) {
+        var value = parameters[key];
+        qs += encodeURIComponent(key) + '=' + encodeURIComponent(value) + '&';
+      }
+    }
+    if (qs.length > 0) {
+      // chop off last '&'
+      qs = qs.substring(0, qs.length - 1);
+      url = url + '?' + qs;
+    }
+    return url;
+  };
+
+  var _performRequest = function(requestData, callback) {
+    var req = new XMLHttpRequest();
+
+    var promiseFunction = function(resolve, reject) {
+      function success(data) {
+        if (resolve) {
+          resolve(data);
+        }
+        if (callback) {
+          callback(null, data);
+        }
+      }
+
+      function failure() {
+        if (reject) {
+          reject(req);
+        }
+        if (callback) {
+          callback(req, null);
+        }
+      }
+
+      var type = requestData.type || 'GET';
+      req.open(type, _buildUrl(requestData.url, requestData.params));
+      if (_accessToken) {
+        req.setRequestHeader('Authorization', 'Bearer ' + _accessToken);
+      }
+      if (requestData.contentType) {
+        req.setRequestHeader('Content-Type', requestData.contentType)
+      }
+
+      req.onreadystatechange = function() {
+        if (req.readyState === 4) {
+          var data = null;
+          try {
+            data = req.responseText ? JSON.parse(req.responseText) : '';
+          } catch (e) {
+            console.error(e);
+          }
+
+          if (req.status >= 200 && req.status < 300) {
+            success(data);
+          } else {
+            failure();
+          }
+        }
+      };
+
+      if (type === 'GET') {
+        req.send(null);
+      } else {
+        var postData = null
+        if (requestData.postData) {
+          postData = requestData.contentType === 'image/jpeg' ? requestData.postData : JSON.stringify(requestData.postData)
+        }
+        req.send(postData);
+      }
+    };
+
+    if (callback) {
+      promiseFunction();
+      return null;
+    } else {
+      return _promiseProvider(promiseFunction, function() {
+        req.abort();
+      });
+    }
+  };
+
+  var _checkParamsAndPerformRequest = function(requestData, options, callback, optionsAlwaysExtendParams) {
+    var opt = {};
+    var cb = null;
+
+    if (typeof options === 'object') {
+      opt = options;
+      cb = callback;
+    } else if (typeof options === 'function') {
+      cb = options;
+    }
+
+    // options extend postData, if any. Otherwise they extend parameters sent in the url
+    var type = requestData.type || 'GET';
+    if (type !== 'GET' && requestData.postData && !optionsAlwaysExtendParams) {
+      requestData.postData = _extend(requestData.postData, opt);
+    } else {
+      requestData.params = _extend(requestData.params, opt);
+    }
+    return _performRequest(requestData, cb);
+  };
 
   /**
-   * Pauses the Current User's Playback
-   * @param {Object} [options] Options, for now device_id,
-   * @param {requestCallback} [callback] Optional callback method to be called instead of the promise.
-   * @example playbackPause().then(...)
-   * @returns {Promise|undefined} A promise that if successful, resolves into a paging object of tracks,
-   *          otherwise an error. Not returned if a callback is given.
+   * Creates an instance of the wrapper
+   * @constructor
    */
-  pause: function(options, callback) {
-    return (
-      WebApiRequest.builder(this.getAccessToken())
-        .withPath('/v1/me/player/pause')
-        /*jshint camelcase: false */
-        .withQueryParameters(
-          options && options.device_id ? { device_id: options.device_id } : null
-        )
-        .withHeaders({ 'Content-Type': 'application/json' })
-        .build()
-        .execute(HttpManager.put, callback)
-    );
-  },
+  var Constr = function() {};
+
+  Constr.prototype = {
+    constructor: SpotifyWebApi
+  };
 
   /**
-   * Skip the Current User's Playback To Previous Track
-   * @param {requestCallback} [callback] Optional callback method to be called instead of the promise.
-   * @example playbackPrevious().then(...)
-   * @returns {Promise|undefined} A promise that if successful, resolves into a paging object of tracks,
-   *          otherwise an error. Not returned if a callback is given.
-   */
-  skipToPrevious: function(callback) {
-    return WebApiRequest.builder(this.getAccessToken())
-      .withPath('/v1/me/player/previous')
-      .withHeaders({ 'Content-Type': 'application/json' })
-      .build()
-      .execute(HttpManager.post, callback);
-  },
-
-  /**
-   * Skip the Current User's Playback To Next Track
-   * @param {requestCallback} [callback] Optional callback method to be called instead of the promise.
-   * @example playbackNext().then(...)
-   * @returns {Promise|undefined} A promise that if successful, resolves into a paging object of tracks,
-   *          otherwise an error. Not returned if a callback is given.
-   */
-  skipToNext: function(callback) {
-    return WebApiRequest.builder(this.getAccessToken())
-      .withPath('/v1/me/player/next')
-      .withHeaders({ 'Content-Type': 'application/json' })
-      .build()
-      .execute(HttpManager.post, callback);
-  },
-
-  /**
-   * Seeks to the given position in the user’s currently playing track.
+   * Fetches a resource through a generic GET request.
    *
-   * @param {number} positionMs The position in milliseconds to seek to. Must be a positive number.
-   * @param {Object} options A JSON object with options that can be passed.
+   * @param {string} url The URL to be fetched
+   * @param {function(Object,Object)} callback An optional callback
+   * @return {Object} Null if a callback is provided, a `Promise` object otherwise
+   */
+  Constr.prototype.getGeneric = function(url, callback) {
+    var requestData = {
+      url: url
+    };
+    return _checkParamsAndPerformRequest(requestData, callback);
+  };
+
+  /**
+   * Fetches information about the current user.
+   * See [Get Current User's Profile](https://developer.spotify.com/web-api/get-current-users-profile/) on
+   * the Spotify Developer site for more information about the endpoint.
+   *
+   * @param {Object} options A JSON object with options that can be passed
    * @param {function(Object,Object)} callback An optional callback that receives 2 parameters. The first
    * one is the error object (null if no error), and the second is the value if the request succeeded.
    * @return {Object} Null if a callback is provided, a `Promise` object otherwise
    */
-  seek: function(positionMs, options, callback) {
-    var params = {
-      /* jshint camelcase: false */
-      position_ms: positionMs
+  Constr.prototype.getMe = function(options, callback) {
+    var requestData = {
+      url: _baseUri + '/me'
     };
-    if (options && 'device_id' in options) {
-      /* jshint camelcase: false */
-      params.device_id = options.device_id;
-    }
-    return WebApiRequest.builder(this.getAccessToken())
-      .withPath('/v1/me/player/seek')
-      .withQueryParameters(params)
-      .build()
-      .execute(HttpManager.put, callback);
-  },
+    return _checkParamsAndPerformRequest(requestData, options, callback);
+  };
 
   /**
-   * Set Repeat Mode On The Current User's Playback
-   * @param {Object} [options] Options, being state (track, context, off).
-   * @param {requestCallback} [callback] Optional callback method to be called instead of the promise.
-   * @example playbackRepeat({state: 'context'}).then(...)
-   * @returns {Promise|undefined} A promise that if successful, resolves into a paging object of tracks,
-   *          otherwise an error. Not returned if a callback is given.
-   */
-  setRepeat: function(options, callback) {
-    return WebApiRequest.builder(this.getAccessToken())
-      .withPath('/v1/me/player/repeat')
-      .withQueryParameters({
-        state: options.state || 'off'
-      })
-      .build()
-      .execute(HttpManager.put, callback);
-  },
-
-  /**
-   * Set Shuffle Mode On The Current User's Playback
-   * @param {Object} [options] Options, being state (true, false).
-   * @param {requestCallback} [callback] Optional callback method to be called instead of the promise.
-   * @example playbackShuffle({state: 'false'}).then(...)
-   * @returns {Promise|undefined} A promise that if successful, resolves into a paging object of tracks,
-   *          otherwise an error. Not returned if a callback is given.
-   */
-  setShuffle: function(options, callback) {
-    return WebApiRequest.builder(this.getAccessToken())
-      .withPath('/v1/me/player/shuffle')
-      .withQueryParameters({
-        state: options.state || 'false'
-      })
-      .build()
-      .execute(HttpManager.put, callback);
-  },
-
-  /**
-   * Set the volume for the user’s current playback device.
+   * Fetches current user's saved tracks.
+   * See [Get Current User's Saved Tracks](https://developer.spotify.com/web-api/get-users-saved-tracks/) on
+   * the Spotify Developer site for more information about the endpoint.
    *
-   * @param {number} volumePercent The volume to set. Must be a value from 0 to 100 inclusive.
-   * @param {Object} options A JSON object with options that can be passed.
+   * @param {Object} options A JSON object with options that can be passed
    * @param {function(Object,Object)} callback An optional callback that receives 2 parameters. The first
    * one is the error object (null if no error), and the second is the value if the request succeeded.
    * @return {Object} Null if a callback is provided, a `Promise` object otherwise
    */
-  setVolume: function(volumePercent, options, callback) {
-    var params = {
-      /* jshint camelcase: false */
-      volume_percent: volumePercent
+  Constr.prototype.getMySavedTracks = function(options, callback) {
+    var requestData = {
+      url: _baseUri + '/me/tracks'
     };
-    if (options && 'device_id' in options) {
-      /* jshint camelcase: false */
-      params.device_id = options.device_id;
-    }
-    return WebApiRequest.builder(this.getAccessToken())
-      .withPath('/v1/me/player/volume')
-      .withQueryParameters(params)
-      .build()
-      .execute(HttpManager.put, callback);
-  },
+    return _checkParamsAndPerformRequest(requestData, options, callback);
+  };
 
   /**
-   * Add the current user as a follower of one or more other Spotify users.
-   * @param {string[]} userIds The IDs of the users to be followed.
-   * @param {requestCallback} [callback] Optional callback method to be called instead of the promise.
-   * @example followUsers(['thelinmichael', 'wizzler']).then(...)
-   * @returns {Promise|undefined} A promise that if successful, simply resolves to an empty object. If rejected,
-   *          it contains an error object. Not returned if a callback is given.
+   * Adds a list of tracks to the current user's saved tracks.
+   * See [Save Tracks for Current User](https://developer.spotify.com/web-api/save-tracks-user/) on
+   * the Spotify Developer site for more information about the endpoint.
+   *
+   * @param {Array<string>} trackIds The ids of the tracks. If you know their Spotify URI it is easy
+   * to find their track id (e.g. spotify:track:<here_is_the_track_id>)
+   * @param {Object} options A JSON object with options that can be passed
+   * @param {function(Object,Object)} callback An optional callback that receives 2 parameters. The first
+   * one is the error object (null if no error), and the second is the value if the request succeeded.
+   * @return {Object} Null if a callback is provided, a `Promise` object otherwise
    */
-  followUsers: function(userIds, callback) {
-    return WebApiRequest.builder(this.getAccessToken())
-      .withPath('/v1/me/following')
-      .withQueryParameters({
+  Constr.prototype.addToMySavedTracks = function(trackIds, options, callback) {
+    var requestData = {
+      url: _baseUri + '/me/tracks',
+      type: 'PUT',
+      postData: trackIds
+    };
+    return _checkParamsAndPerformRequest(requestData, options, callback);
+  };
+
+  /**
+   * Remove a list of tracks from the current user's saved tracks.
+   * See [Remove Tracks for Current User](https://developer.spotify.com/web-api/remove-tracks-user/) on
+   * the Spotify Developer site for more information about the endpoint.
+   *
+   * @param {Array<string>} trackIds The ids of the tracks. If you know their Spotify URI it is easy
+   * to find their track id (e.g. spotify:track:<here_is_the_track_id>)
+   * @param {Object} options A JSON object with options that can be passed
+   * @param {function(Object,Object)} callback An optional callback that receives 2 parameters. The first
+   * one is the error object (null if no error), and the second is the value if the request succeeded.
+   * @return {Object} Null if a callback is provided, a `Promise` object otherwise
+   */
+  Constr.prototype.removeFromMySavedTracks = function(trackIds, options, callback) {
+    var requestData = {
+      url: _baseUri + '/me/tracks',
+      type: 'DELETE',
+      postData: trackIds
+    };
+    return _checkParamsAndPerformRequest(requestData, options, callback);
+  };
+
+  /**
+   * Checks if the current user's saved tracks contains a certain list of tracks.
+   * See [Check Current User's Saved Tracks](https://developer.spotify.com/web-api/check-users-saved-tracks/) on
+   * the Spotify Developer site for more information about the endpoint.
+   *
+   * @param {Array<string>} trackIds The ids of the tracks. If you know their Spotify URI it is easy
+   * to find their track id (e.g. spotify:track:<here_is_the_track_id>)
+   * @param {Object} options A JSON object with options that can be passed
+   * @param {function(Object,Object)} callback An optional callback that receives 2 parameters. The first
+   * one is the error object (null if no error), and the second is the value if the request succeeded.
+   * @return {Object} Null if a callback is provided, a `Promise` object otherwise
+   */
+  Constr.prototype.containsMySavedTracks = function(trackIds, options, callback) {
+    var requestData = {
+      url: _baseUri + '/me/tracks/contains',
+      params: { ids: trackIds.join(',') }
+    };
+    return _checkParamsAndPerformRequest(requestData, options, callback);
+  };
+
+  /**
+   * Get a list of the albums saved in the current Spotify user's "Your Music" library.
+   * See [Get Current User's Saved Albums](https://developer.spotify.com/web-api/get-users-saved-albums/) on
+   * the Spotify Developer site for more information about the endpoint.
+   *
+   * @param {Object} options A JSON object with options that can be passed
+   * @param {function(Object,Object)} callback An optional callback that receives 2 parameters. The first
+   * one is the error object (null if no error), and the second is the value if the request succeeded.
+   * @return {Object} Null if a callback is provided, a `Promise` object otherwise
+   */
+  Constr.prototype.getMySavedAlbums = function(options, callback) {
+    var requestData = {
+      url: _baseUri + '/me/albums'
+    };
+    return _checkParamsAndPerformRequest(requestData, options, callback);
+  };
+
+  /**
+   * Save one or more albums to the current user's "Your Music" library.
+   * See [Save Albums for Current User](https://developer.spotify.com/web-api/save-albums-user/) on
+   * the Spotify Developer site for more information about the endpoint.
+   *
+   * @param {Array<string>} albumIds The ids of the albums. If you know their Spotify URI, it is easy
+   * to find their album id (e.g. spotify:album:<here_is_the_album_id>)
+   * @param {Object} options A JSON object with options that can be passed
+   * @param {function(Object,Object)} callback An optional callback that receives 2 parameters. The first
+   * one is the error object (null if no error), and the second is the value if the request succeeded.
+   * @return {Object} Null if a callback is provided, a `Promise` object otherwise
+   */
+  Constr.prototype.addToMySavedAlbums = function(albumIds, options, callback) {
+    var requestData = {
+      url: _baseUri + '/me/albums',
+      type: 'PUT',
+      postData: albumIds
+    };
+    return _checkParamsAndPerformRequest(requestData, options, callback);
+  };
+
+  /**
+   * Remove one or more albums from the current user's "Your Music" library.
+   * See [Remove Albums for Current User](https://developer.spotify.com/web-api/remove-albums-user/) on
+   * the Spotify Developer site for more information about the endpoint.
+   *
+   * @param {Array<string>} albumIds The ids of the albums. If you know their Spotify URI, it is easy
+   * to find their album id (e.g. spotify:album:<here_is_the_album_id>)
+   * @param {Object} options A JSON object with options that can be passed
+   * @param {function(Object,Object)} callback An optional callback that receives 2 parameters. The first
+   * one is the error object (null if no error), and the second is the value if the request succeeded.
+   * @return {Object} Null if a callback is provided, a `Promise` object otherwise
+   */
+  Constr.prototype.removeFromMySavedAlbums = function(albumIds, options, callback) {
+    var requestData = {
+      url: _baseUri + '/me/albums',
+      type: 'DELETE',
+      postData: albumIds
+    };
+    return _checkParamsAndPerformRequest(requestData, options, callback);
+  };
+
+  /**
+   * Check if one or more albums is already saved in the current Spotify user's "Your Music" library.
+   * See [Check User's Saved Albums](https://developer.spotify.com/web-api/check-users-saved-albums/) on
+   * the Spotify Developer site for more information about the endpoint.
+   *
+   * @param {Array<string>} albumIds The ids of the albums. If you know their Spotify URI, it is easy
+   * to find their album id (e.g. spotify:album:<here_is_the_album_id>)
+   * @param {Object} options A JSON object with options that can be passed
+   * @param {function(Object,Object)} callback An optional callback that receives 2 parameters. The first
+   * one is the error object (null if no error), and the second is the value if the request succeeded.
+   * @return {Object} Null if a callback is provided, a `Promise` object otherwise
+   */
+  Constr.prototype.containsMySavedAlbums = function(albumIds, options, callback) {
+    var requestData = {
+      url: _baseUri + '/me/albums/contains',
+      params: { ids: albumIds.join(',') }
+    };
+    return _checkParamsAndPerformRequest(requestData, options, callback);
+  };
+
+  /**
+   * Get the current user’s top artists based on calculated affinity.
+   * See [Get a User’s Top Artists](https://developer.spotify.com/web-api/get-users-top-artists-and-tracks/) on
+   * the Spotify Developer site for more information about the endpoint.
+   *
+   * @param {Object} options A JSON object with options that can be passed
+   * @param {function(Object,Object)} callback An optional callback that receives 2 parameters. The first
+   * one is the error object (null if no error), and the second is the value if the request succeeded.
+   * @return {Object} Null if a callback is provided, a `Promise` object otherwise
+   */
+  Constr.prototype.getMyTopArtists = function(options, callback) {
+    var requestData = {
+      url: _baseUri + '/me/top/artists'
+    };
+    return _checkParamsAndPerformRequest(requestData, options, callback);
+  };
+
+  /**
+   * Get the current user’s top tracks based on calculated affinity.
+   * See [Get a User’s Top Tracks](https://developer.spotify.com/web-api/get-users-top-artists-and-tracks/) on
+   * the Spotify Developer site for more information about the endpoint.
+   *
+   * @param {Object} options A JSON object with options that can be passed
+   * @param {function(Object,Object)} callback An optional callback that receives 2 parameters. The first
+   * one is the error object (null if no error), and the second is the value if the request succeeded.
+   * @return {Object} Null if a callback is provided, a `Promise` object otherwise
+   */
+  Constr.prototype.getMyTopTracks = function(options, callback) {
+    var requestData = {
+      url: _baseUri + '/me/top/tracks'
+    };
+    return _checkParamsAndPerformRequest(requestData, options, callback);
+  };
+
+  /**
+   * Get tracks from the current user’s recently played tracks.
+   * See [Get Current User’s Recently Played Tracks](https://developer.spotify.com/web-api/web-api-personalization-endpoints/get-recently-played/) on
+   * the Spotify Developer site for more information about the endpoint.
+   *
+   * @param {Object} options A JSON object with options that can be passed
+   * @param {function(Object,Object)} callback An optional callback that receives 2 parameters. The first
+   * one is the error object (null if no error), and the second is the value if the request succeeded.
+   * @return {Object} Null if a callback is provided, a `Promise` object otherwise
+   */
+  Constr.prototype.getMyRecentlyPlayedTracks = function(options, callback) {
+    var requestData = {
+      url: _baseUri + '/me/player/recently-played'
+    };
+    return _checkParamsAndPerformRequest(requestData, options, callback);
+  };
+
+  /**
+   * Adds the current user as a follower of one or more other Spotify users.
+   * See [Follow Artists or Users](https://developer.spotify.com/web-api/follow-artists-users/) on
+   * the Spotify Developer site for more information about the endpoint.
+   *
+   * @param {Array<string>} userIds The ids of the users. If you know their Spotify URI it is easy
+   * to find their user id (e.g. spotify:user:<here_is_the_user_id>)
+   * @param {function(Object,Object)} callback An optional callback that receives 2 parameters. The first
+   * one is the error object (null if no error), and the second is an empty value if the request succeeded.
+   * @return {Object} Null if a callback is provided, a `Promise` object otherwise
+   */
+  Constr.prototype.followUsers = function(userIds, callback) {
+    var requestData = {
+      url: _baseUri + '/me/following/',
+      type: 'PUT',
+      params: {
         ids: userIds.join(','),
         type: 'user'
-      })
-      .build()
-      .execute(HttpManager.put, callback);
-  },
+      }
+    };
+    return _checkParamsAndPerformRequest(requestData, callback);
+  };
 
   /**
-   * Add the current user as a follower of one or more artists.
-   * @param {string[]} artistIds The IDs of the artists to be followed.
-   * @param {requestCallback} [callback] Optional callback method to be called instead of the promise.
-   * @example followArtists(['0LcJLqbBmaGUft1e9Mm8HV', '3gqv1kgivAc92KnUm4elKv']).then(...)
-   * @returns {Promise|undefined} A promise that if successful, simply resolves to an empty object. If rejected,
-   *          it contains an error object. Not returned if a callback is given.
+   * Adds the current user as a follower of one or more artists.
+   * See [Follow Artists or Users](https://developer.spotify.com/web-api/follow-artists-users/) on
+   * the Spotify Developer site for more information about the endpoint.
+   *
+   * @param {Array<string>} artistIds The ids of the artists. If you know their Spotify URI it is easy
+   * to find their artist id (e.g. spotify:artist:<here_is_the_artist_id>)
+   * @param {function(Object,Object)} callback An optional callback that receives 2 parameters. The first
+   * one is the error object (null if no error), and the second is an empty value if the request succeeded.
+   * @return {Object} Null if a callback is provided, a `Promise` object otherwise
    */
-  followArtists: function(artistIds, callback) {
-    return WebApiRequest.builder(this.getAccessToken())
-      .withPath('/v1/me/following')
-      .withQueryParameters({
+  Constr.prototype.followArtists = function(artistIds, callback) {
+    var requestData = {
+      url: _baseUri + '/me/following/',
+      type: 'PUT',
+      params: {
         ids: artistIds.join(','),
         type: 'artist'
-      })
-      .build()
-      .execute(HttpManager.put, callback);
-  },
+      }
+    };
+    return _checkParamsAndPerformRequest(requestData, callback);
+  };
 
   /**
-   * Remove the current user as a follower of one or more other Spotify users.
-   * @param {string[]} userIds The IDs of the users to be unfollowed.
-   * @param {requestCallback} [callback] Optional callback method to be called instead of the promise.
-   * @example unfollowUsers(['thelinmichael', 'wizzler']).then(...)
-   * @returns {Promise|undefined} A promise that if successful, simply resolves to an empty object. If rejected,
-   *          it contains an error object. Not returned if a callback is given.
+   * Add the current user as a follower of one playlist.
+   * See [Follow a Playlist](https://developer.spotify.com/web-api/follow-playlist/) on
+   * the Spotify Developer site for more information about the endpoint.
+   *
+   * @param {string} playlistId The id of the playlist. If you know the Spotify URI it is easy
+   * to find the playlist id (e.g. spotify:user:xxxx:playlist:<here_is_the_playlist_id>)
+   * @param {Object} options A JSON object with options that can be passed. For instance,
+   * whether you want the playlist to be followed privately ({public: false})
+   * @param {function(Object,Object)} callback An optional callback that receives 2 parameters. The first
+   * one is the error object (null if no error), and the second is an empty value if the request succeeded.
+   * @return {Object} Null if a callback is provided, a `Promise` object otherwise
    */
-  unfollowUsers: function(userIds, callback) {
-    return WebApiRequest.builder(this.getAccessToken())
-      .withPath('/v1/me/following')
-      .withQueryParameters({
+  Constr.prototype.followPlaylist = function(playlistId, options, callback) {
+    var requestData = {
+      url: _baseUri + '/playlists/' + playlistId + '/followers',
+      type: 'PUT',
+      postData: {}
+    };
+
+    return _checkParamsAndPerformRequest(requestData, options, callback);
+  };
+
+  /**
+   * Removes the current user as a follower of one or more other Spotify users.
+   * See [Unfollow Artists or Users](https://developer.spotify.com/web-api/unfollow-artists-users/) on
+   * the Spotify Developer site for more information about the endpoint.
+   *
+   * @param {Array<string>} userIds The ids of the users. If you know their Spotify URI it is easy
+   * to find their user id (e.g. spotify:user:<here_is_the_user_id>)
+   * @param {function(Object,Object)} callback An optional callback that receives 2 parameters. The first
+   * one is the error object (null if no error), and the second is an empty value if the request succeeded.
+   * @return {Object} Null if a callback is provided, a `Promise` object otherwise
+   */
+  Constr.prototype.unfollowUsers = function(userIds, callback) {
+    var requestData = {
+      url: _baseUri + '/me/following/',
+      type: 'DELETE',
+      params: {
         ids: userIds.join(','),
         type: 'user'
-      })
-      .build()
-      .execute(HttpManager.del, callback);
-  },
+      }
+    };
+    return _checkParamsAndPerformRequest(requestData, callback);
+  };
 
   /**
-   * Remove the current user as a follower of one or more artists.
-   * @param {string[]} artistIds The IDs of the artists to be unfollowed.
-   * @param {requestCallback} [callback] Optional callback method to be called instead of the promise.
-   * @example unfollowArtists(['0LcJLqbBmaGUft1e9Mm8HV', '3gqv1kgivAc92KnUm4elKv']).then(...)
-   * @returns {Promise|undefined} A promise that if successful, simply resolves to an empty object. If rejected,
-   *          it contains an error object. Not returned if a callback is given.
+   * Removes the current user as a follower of one or more artists.
+   * See [Unfollow Artists or Users](https://developer.spotify.com/web-api/unfollow-artists-users/) on
+   * the Spotify Developer site for more information about the endpoint.
+   *
+   * @param {Array<string>} artistIds The ids of the artists. If you know their Spotify URI it is easy
+   * to find their artist id (e.g. spotify:artist:<here_is_the_artist_id>)
+   * @param {function(Object,Object)} callback An optional callback that receives 2 parameters. The first
+   * one is the error object (null if no error), and the second is an empty value if the request succeeded.
+   * @return {Object} Null if a callback is provided, a `Promise` object otherwise
    */
-  unfollowArtists: function(artistIds, callback) {
-    return WebApiRequest.builder(this.getAccessToken())
-      .withPath('/v1/me/following')
-      .withQueryParameters({
+  Constr.prototype.unfollowArtists = function(artistIds, callback) {
+    var requestData = {
+      url: _baseUri + '/me/following/',
+      type: 'DELETE',
+      params: {
         ids: artistIds.join(','),
         type: 'artist'
-      })
-      .build()
-      .execute(HttpManager.del, callback);
-  },
+      }
+    };
+    return _checkParamsAndPerformRequest(requestData, callback);
+  };
 
   /**
-   * Check to see if the current user is following one or more other Spotify users.
-   * @param {string[]} userIds The IDs of the users to check if are followed by the current user.
-   * @param {requestCallback} [callback] Optional callback method to be called instead of the promise.
-   * @example isFollowingUsers(['thelinmichael', 'wizzler']).then(...)
-   * @returns {Promise|undefined} A promise that if successful, resolves into an array of booleans. The order
-   *          of the returned array's elements correspond to the users IDs in the request.
-   *          The boolean value of true indicates that the user is following that user, otherwise is not.
-   *          Not returned if a callback is given.
+   * Remove the current user as a follower of one playlist.
+   * See [Unfollow a Playlist](https://developer.spotify.com/web-api/unfollow-playlist/) on
+   * the Spotify Developer site for more information about the endpoint.
+   *
+   * @param {string} playlistId The id of the playlist. If you know the Spotify URI it is easy
+   * to find the playlist id (e.g. spotify:user:xxxx:playlist:<here_is_the_playlist_id>)
+   * @param {function(Object,Object)} callback An optional callback that receives 2 parameters. The first
+   * one is the error object (null if no error), and the second is an empty value if the request succeeded.
+   * @return {Object} Null if a callback is provided, a `Promise` object otherwise
    */
-  isFollowingUsers: function(userIds, callback) {
-    return WebApiRequest.builder(this.getAccessToken())
-      .withPath('/v1/me/following/contains')
-      .withQueryParameters({
+  Constr.prototype.unfollowPlaylist = function(playlistId, callback) {
+    var requestData = {
+      url: _baseUri + '/playlists/' + playlistId + '/followers',
+      type: 'DELETE'
+    };
+    return _checkParamsAndPerformRequest(requestData, callback);
+  };
+
+  /**
+   * Checks to see if the current user is following one or more other Spotify users.
+   * See [Check if Current User Follows Users or Artists](https://developer.spotify.com/web-api/check-current-user-follows/) on
+   * the Spotify Developer site for more information about the endpoint.
+   *
+   * @param {Array<string>} userIds The ids of the users. If you know their Spotify URI it is easy
+   * to find their user id (e.g. spotify:user:<here_is_the_user_id>)
+   * @param {function(Object,Object)} callback An optional callback that receives 2 parameters. The first
+   * one is the error object (null if no error), and the second is an array of boolean values that indicate
+   * whether the user is following the users sent in the request.
+   * @return {Object} Null if a callback is provided, a `Promise` object otherwise
+   */
+  Constr.prototype.isFollowingUsers = function(userIds, callback) {
+    var requestData = {
+      url: _baseUri + '/me/following/contains',
+      type: 'GET',
+      params: {
         ids: userIds.join(','),
         type: 'user'
-      })
-      .build()
-      .execute(HttpManager.get, callback);
-  },
+      }
+    };
+    return _checkParamsAndPerformRequest(requestData, callback);
+  };
+
+  /**
+   * Checks to see if the current user is following one or more artists.
+   * See [Check if Current User Follows](https://developer.spotify.com/web-api/check-current-user-follows/) on
+   * the Spotify Developer site for more information about the endpoint.
+   *
+   * @param {Array<string>} artistIds The ids of the artists. If you know their Spotify URI it is easy
+   * to find their artist id (e.g. spotify:artist:<here_is_the_artist_id>)
+   * @param {function(Object,Object)} callback An optional callback that receives 2 parameters. The first
+   * one is the error object (null if no error), and the second is an array of boolean values that indicate
+   * whether the user is following the artists sent in the request.
+   * @return {Object} Null if a callback is provided, a `Promise` object otherwise
+   */
+  Constr.prototype.isFollowingArtists = function(artistIds, callback) {
+    var requestData = {
+      url: _baseUri + '/me/following/contains',
+      type: 'GET',
+      params: {
+        ids: artistIds.join(','),
+        type: 'artist'
+      }
+    };
+    return _checkParamsAndPerformRequest(requestData, callback);
+  };
+
+  /**
+   * Check to see if one or more Spotify users are following a specified playlist.
+   * See [Check if Users Follow a Playlist](https://developer.spotify.com/web-api/check-user-following-playlist/) on
+   * the Spotify Developer site for more information about the endpoint.
+   *
+   * @param {string} playlistId The id of the playlist. If you know the Spotify URI it is easy
+   * to find the playlist id (e.g. spotify:user:xxxx:playlist:<here_is_the_playlist_id>)
+   * @param {Array<string>} userIds The ids of the users. If you know their Spotify URI it is easy
+   * to find their user id (e.g. spotify:user:<here_is_the_user_id>)
+   * @param {function(Object,Object)} callback An optional callback that receives 2 parameters. The first
+   * one is the error object (null if no error), and the second is an array of boolean values that indicate
+   * whether the users are following the playlist sent in the request.
+   * @return {Object} Null if a callback is provided, a `Promise` object otherwise
+   */
+  Constr.prototype.areFollowingPlaylist = function(playlistId, userIds, callback) {
+    var requestData = {
+      url: _baseUri + '/playlists/' + playlistId + '/followers/contains',
+      type: 'GET',
+      params: {
+        ids: userIds.join(',')
+      }
+    };
+    return _checkParamsAndPerformRequest(requestData, callback);
+  };
 
   /**
    * Get the current user's followed artists.
+   * See [Get User's Followed Artists](https://developer.spotify.com/web-api/get-followed-artists/) on
+   * the Spotify Developer site for more information about the endpoint.
+   *
    * @param {Object} [options] Options, being after and limit.
-   * @param {requestCallback} [callback] Optional callback method to be called instead of the promise.
+   * @param {function(Object,Object)} callback An optional callback that receives 2 parameters. The first
+   * one is the error object (null if no error), and the second is an object with a paged object containing
+   * artists.
    * @returns {Promise|undefined} A promise that if successful, resolves to an object containing a paging object which contains
-   * album objects. Not returned if a callback is given.
+   * artists objects. Not returned if a callback is given.
    */
-  getFollowedArtists: function(options, callback) {
-    return WebApiRequest.builder(this.getAccessToken())
-      .withPath('/v1/me/following')
-      .withHeaders({ 'Content-Type': 'application/json' })
-      .withQueryParameters(
-        {
-          type: 'artist'
-        },
-        options
-      )
-      .build()
-      .execute(HttpManager.get, callback);
-  },
-
-  /**
-   * Check if users are following a playlist.
-   * @param {string} userId The playlist's owner's user ID
-   * @param {string} playlistId The playlist's ID
-   * @param {String[]} User IDs of the following users
-   * @param {requestCallback} [callback] Optional callback method to be called instead of the promise.
-   * @returns {Promise|undefined} A promise that if successful returns an array of booleans. If rejected,
-   * it contains an error object. Not returned if a callback is given.
-   */
-  areFollowingPlaylist: function(userId, playlistId, followerIds, callback) {
-    return WebApiRequest.builder(this.getAccessToken())
-      .withPath(
-        '/v1/users/' +
-          encodeURIComponent(userId) +
-          '/playlists/' +
-          playlistId +
-          '/followers/contains'
-      )
-      .withQueryParameters({
-        ids: followerIds.join(',')
-      })
-      .build()
-      .execute(HttpManager.get, callback);
-  },
-
-  /**
-   * Check to see if the current user is following one or more artists.
-   * @param {string[]} artistIds The IDs of the artists to check if are followed by the current user.
-   * @param {requestCallback} [callback] Optional callback method to be called instead of the promise.
-   * @example isFollowingArtists(['0LcJLqbBmaGUft1e9Mm8HV', '3gqv1kgivAc92KnUm4elKv']).then(...)
-   * @returns {Promise|undefined} A promise that if successful, resolves into an array of booleans. The order
-   *          of the returned array's elements correspond to the artists IDs in the request.
-   *          The boolean value of true indicates that the user is following that artist, otherwise is not.
-   *          Not returned if a callback is given.
-   */
-  isFollowingArtists: function(artistIds, callback) {
-    return WebApiRequest.builder(this.getAccessToken())
-      .withPath('/v1/me/following/contains')
-      .withQueryParameters({
-        ids: artistIds.join(','),
+  Constr.prototype.getFollowedArtists = function(options, callback) {
+    var requestData = {
+      url: _baseUri + '/me/following',
+      type: 'GET',
+      params: {
         type: 'artist'
-      })
-      .build()
-      .execute(HttpManager.get, callback);
-  },
+      }
+    };
+    return _checkParamsAndPerformRequest(requestData, options, callback);
+  };
 
   /**
-   * Retrieve new releases
-   * @param {Object} [options] Options, being country, limit and/or offset.
-   * @param {requestCallback} [callback] Optional callback method to be called instead of the promise.
-   * @returns {Promise|undefined} A promise that if successful, resolves to an object containing a paging object which contains
-   * album objects. Not returned if a callback is given.
+   * Fetches information about a specific user.
+   * See [Get a User's Profile](https://developer.spotify.com/web-api/get-users-profile/) on
+   * the Spotify Developer site for more information about the endpoint.
+   *
+   * @param {string} userId The id of the user. If you know the Spotify URI it is easy
+   * to find the id (e.g. spotify:user:<here_is_the_id>)
+   * @param {Object} options A JSON object with options that can be passed
+   * @param {function(Object,Object)} callback An optional callback that receives 2 parameters. The first
+   * one is the error object (null if no error), and the second is the value if the request succeeded.
+   * @return {Object} Null if a callback is provided, a `Promise` object otherwise
    */
-  getNewReleases: function(options, callback) {
-    return WebApiRequest.builder(this.getAccessToken())
-      .withPath('/v1/browse/new-releases')
-      .withHeaders({ 'Content-Type': 'application/json' })
-      .withQueryParameters(options)
-      .build()
-      .execute(HttpManager.get, callback);
-  },
+  Constr.prototype.getUser = function(userId, options, callback) {
+    var requestData = {
+      url: _baseUri + '/users/' + encodeURIComponent(userId)
+    };
+    return _checkParamsAndPerformRequest(requestData, options, callback);
+  };
 
   /**
-   * Retrieve featured playlists
-   * @param {Object} [options] Options, being country, locale, timestamp, limit, offset.
-   * @param {requestCallback} [callback] Optional callback method to be called instead of the promise.
-   * @returns {Promise|undefined} A promise that if successful, resolves to an object containing a paging object which contains
-   * featured playlists. Not returned if a callback is given.
+   * Fetches a list of the current user's playlists.
+   * See [Get a List of a User's Playlists](https://developer.spotify.com/web-api/get-list-users-playlists/) on
+   * the Spotify Developer site for more information about the endpoint.
+   *
+   * @param {string} userId An optional id of the user. If you know the Spotify URI it is easy
+   * to find the id (e.g. spotify:user:<here_is_the_id>). If not provided, the id of the user that granted
+   * the permissions will be used.
+   * @param {Object} options A JSON object with options that can be passed
+   * @param {function(Object,Object)} callback An optional callback that receives 2 parameters. The first
+   * one is the error object (null if no error), and the second is the value if the request succeeded.
+   * @return {Object} Null if a callback is provided, a `Promise` object otherwise
    */
-  getFeaturedPlaylists: function(options, callback) {
-    return WebApiRequest.builder(this.getAccessToken())
-      .withPath('/v1/browse/featured-playlists')
-      .withHeaders({ 'Content-Type': 'application/json' })
-      .withQueryParameters(options)
-      .build()
-      .execute(HttpManager.get, callback);
-  },
-
-  /**
-   * Retrieve a list of categories used to tag items in Spotify (e.g. in the 'Browse' tab)
-   * @param {Object} [options] Options, being country, locale, limit, offset.
-   * @param {requestCallback} [callback] Optional callback method to be called instead of the promise.
-   * @returns {Promise|undefined} A promise that if successful, resolves to an object containing a paging object of categories.
-   * Not returned if a callback is given.
-   */
-  getCategories: function(options, callback) {
-    return WebApiRequest.builder(this.getAccessToken())
-      .withPath('/v1/browse/categories')
-      .withQueryParameters(options)
-      .build()
-      .execute(HttpManager.get, callback);
-  },
-
-  /**
-   * Retrieve a category.
-   * @param {string} categoryId The id of the category to retrieve.
-   * @param {Object} [options] Options, being country, locale.
-   * @param {requestCallback} [callback] Optional callback method to be called instead of the promise.
-   * @returns {Promise|undefined} A promise that if successful, resolves to an object containing a category object.
-   * Not returned if a callback is given.
-   */
-  getCategory: function(categoryId, options, callback) {
-    return WebApiRequest.builder(this.getAccessToken())
-      .withPath('/v1/browse/categories/' + categoryId)
-      .withQueryParameters(options)
-      .build()
-      .execute(HttpManager.get, callback);
-  },
-
-  /**
-   * Retrieve playlists for a category.
-   * @param {string} categoryId The id of the category to retrieve playlists for.
-   * @param {Object} [options] Options, being country, limit, offset.
-   * @param {requestCallback} [callback] Optional callback method to be called instead of the promise.
-   * @returns {Promise|undefined} A promise that if successful, resolves to a paging object containing simple playlists.
-   * Not returned if a callback is given.
-   */
-  getPlaylistsForCategory: function(categoryId, options, callback) {
-    return WebApiRequest.builder(this.getAccessToken())
-      .withPath('/v1/browse/categories/' + categoryId + '/playlists')
-      .withQueryParameters(options)
-      .build()
-      .execute(HttpManager.get, callback);
-  }
-};
-
-SpotifyWebApi._addMethods = function(methods) {
-  for (var i in methods) {
-    if (methods.hasOwnProperty(i)) {
-      this.prototype[i] = methods[i];
+  Constr.prototype.getUserPlaylists = function(userId, options, callback) {
+    var requestData;
+    if (typeof userId === 'string') {
+      requestData = {
+        url: _baseUri + '/users/' + encodeURIComponent(userId) + '/playlists'
+      };
+    } else {
+      requestData = {
+        url: _baseUri + '/me/playlists'
+      };
+      callback = options;
+      options = userId;
     }
-  }
-};
+    return _checkParamsAndPerformRequest(requestData, options, callback);
+  };
 
-module.exports = SpotifyWebApi;
+  /**
+   * Fetches a specific playlist.
+   * See [Get a Playlist](https://developer.spotify.com/web-api/get-playlist/) on
+   * the Spotify Developer site for more information about the endpoint.
+   *
+   * @param {string} playlistId The id of the playlist. If you know the Spotify URI it is easy
+   * to find the playlist id (e.g. spotify:user:xxxx:playlist:<here_is_the_playlist_id>)
+   * @param {Object} options A JSON object with options that can be passed
+   * @param {function(Object,Object)} callback An optional callback that receives 2 parameters. The first
+   * one is the error object (null if no error), and the second is the value if the request succeeded.
+   * @return {Object} Null if a callback is provided, a `Promise` object otherwise
+   */
+  Constr.prototype.getPlaylist = function(playlistId, options, callback) {
+    var requestData = {
+      url: _baseUri + '/playlists/' + playlistId
+    };
+    return _checkParamsAndPerformRequest(requestData, options, callback);
+  };
+
+  /**
+   * Fetches the tracks from a specific playlist.
+   * See [Get a Playlist's Tracks](https://developer.spotify.com/web-api/get-playlists-tracks/) on
+   * the Spotify Developer site for more information about the endpoint.
+   *
+   * @param {string} playlistId The id of the playlist. If you know the Spotify URI it is easy
+   * to find the playlist id (e.g. spotify:user:xxxx:playlist:<here_is_the_playlist_id>)
+   * @param {Object} options A JSON object with options that can be passed
+   * @param {function(Object,Object)} callback An optional callback that receives 2 parameters. The first
+   * one is the error object (null if no error), and the second is the value if the request succeeded.
+   * @return {Object} Null if a callback is provided, a `Promise` object otherwise
+   */
+  Constr.prototype.getPlaylistTracks = function(playlistId, options, callback) {
+    var requestData = {
+      url: _baseUri + '/playlists/' + playlistId + '/tracks'
+    };
+    return _checkParamsAndPerformRequest(requestData, options, callback);
+  };
+
+  /**
+   * Creates a playlist and stores it in the current user's library.
+   * See [Create a Playlist](https://developer.spotify.com/web-api/create-playlist/) on
+   * the Spotify Developer site for more information about the endpoint.
+   *
+   * @param {string} userId The id of the user. If you know the Spotify URI it is easy
+   * to find the id (e.g. spotify:user:<here_is_the_id>)
+   * @param {Object} options A JSON object with options that can be passed
+   * @param {function(Object,Object)} callback An optional callback that receives 2 parameters. The first
+   * one is the error object (null if no error), and the second is the value if the request succeeded.
+   * @return {Object} Null if a callback is provided, a `Promise` object otherwise
+   */
+  Constr.prototype.createPlaylist = function(userId, options, callback) {
+    var requestData = {
+      url: _baseUri + '/users/' + encodeURIComponent(userId) + '/playlists',
+      type: 'POST',
+      postData: options
+    };
+    return _checkParamsAndPerformRequest(requestData, options, callback);
+  };
+
+  /**
+   * Change a playlist's name and public/private state
+   * See [Change a Playlist's Details](https://developer.spotify.com/web-api/change-playlist-details/) on
+   * the Spotify Developer site for more information about the endpoint.
+   *
+   * @param {string} playlistId The id of the playlist. If you know the Spotify URI it is easy
+   * to find the playlist id (e.g. spotify:user:xxxx:playlist:<here_is_the_playlist_id>)
+   * @param {Object} data A JSON object with the data to update. E.g. {name: 'A new name', public: true}
+   * @param {function(Object,Object)} callback An optional callback that receives 2 parameters. The first
+   * one is the error object (null if no error), and the second is the value if the request succeeded.
+   * @return {Object} Null if a callback is provided, a `Promise` object otherwise
+   */
+  Constr.prototype.changePlaylistDetails = function(playlistId, data, callback) {
+    var requestData = {
+      url: _baseUri + '/playlists/' + playlistId,
+      type: 'PUT',
+      postData: data
+    };
+    return _checkParamsAndPerformRequest(requestData, data, callback);
+  };
+
+  /**
+   * Add tracks to a playlist.
+   * See [Add Tracks to a Playlist](https://developer.spotify.com/web-api/add-tracks-to-playlist/) on
+   * the Spotify Developer site for more information about the endpoint.
+   *
+   * @param {string} playlistId The id of the playlist. If you know the Spotify URI it is easy
+   * to find the playlist id (e.g. spotify:user:xxxx:playlist:<here_is_the_playlist_id>)
+   * @param {Array<string>} uris An array of Spotify URIs for the tracks
+   * @param {Object} options A JSON object with options that can be passed
+   * @param {function(Object,Object)} callback An optional callback that receives 2 parameters. The first
+   * one is the error object (null if no error), and the second is the value if the request succeeded.
+   * @return {Object} Null if a callback is provided, a `Promise` object otherwise
+   */
+  Constr.prototype.addTracksToPlaylist = function(playlistId, uris, options, callback) {
+    var requestData = {
+      url: _baseUri + '/playlists/' + playlistId + '/tracks',
+      type: 'POST',
+      postData: {
+        uris: uris
+      }
+    };
+    return _checkParamsAndPerformRequest(requestData, options, callback, true);
+  };
+
+  /**
+   * Replace the tracks of a playlist
+   * See [Replace a Playlist's Tracks](https://developer.spotify.com/web-api/replace-playlists-tracks/) on
+   * the Spotify Developer site for more information about the endpoint.
+   *
+   * @param {string} playlistId The id of the playlist. If you know the Spotify URI it is easy
+   * to find the playlist id (e.g. spotify:user:xxxx:playlist:<here_is_the_playlist_id>)
+   * @param {Array<string>} uris An array of Spotify URIs for the tracks
+   * @param {function(Object,Object)} callback An optional callback that receives 2 parameters. The first
+   * one is the error object (null if no error), and the second is the value if the request succeeded.
+   * @return {Object} Null if a callback is provided, a `Promise` object otherwise
+   */
+  Constr.prototype.replaceTracksInPlaylist = function(playlistId, uris, callback) {
+    var requestData = {
+      url: _baseUri + '/playlists/' + playlistId + '/tracks',
+      type: 'PUT',
+      postData: { uris: uris }
+    };
+    return _checkParamsAndPerformRequest(requestData, {}, callback);
+  };
+
+  /**
+   * Reorder tracks in a playlist
+   * See [Reorder a Playlist’s Tracks](https://developer.spotify.com/web-api/reorder-playlists-tracks/) on
+   * the Spotify Developer site for more information about the endpoint.
+   *
+   * @param {string} playlistId The id of the playlist. If you know the Spotify URI it is easy
+   * to find the playlist id (e.g. spotify:user:xxxx:playlist:<here_is_the_playlist_id>)
+   * @param {number} rangeStart The position of the first track to be reordered.
+   * @param {number} insertBefore The position where the tracks should be inserted. To reorder the tracks to
+   * the end of the playlist, simply set insert_before to the position after the last track.
+   * @param {Object} options An object with optional parameters (range_length, snapshot_id)
+   * @param {function(Object,Object)} callback An optional callback that receives 2 parameters. The first
+   * one is the error object (null if no error), and the second is the value if the request succeeded.
+   * @return {Object} Null if a callback is provided, a `Promise` object otherwise
+   */
+  Constr.prototype.reorderTracksInPlaylist = function(playlistId, rangeStart, insertBefore, options, callback) {
+    /* eslint-disable camelcase */
+    var requestData = {
+      url: _baseUri + '/playlists/' + playlistId + '/tracks',
+      type: 'PUT',
+      postData: {
+        range_start: rangeStart,
+        insert_before: insertBefore
+      }
+    };
+    /* eslint-enable camelcase */
+    return _checkParamsAndPerformRequest(requestData, options, callback);
+  };
+
+  /**
+   * Remove tracks from a playlist
+   * See [Remove Tracks from a Playlist](https://developer.spotify.com/web-api/remove-tracks-playlist/) on
+   * the Spotify Developer site for more information about the endpoint.
+   *
+   * @param {string} playlistId The id of the playlist. If you know the Spotify URI it is easy
+   * to find the playlist id (e.g. spotify:user:xxxx:playlist:<here_is_the_playlist_id>)
+   * @param {Array<Object>} uris An array of tracks to be removed. Each element of the array can be either a
+   * string, in which case it is treated as a URI, or an object containing the properties `uri` (which is a
+   * string) and `positions` (which is an array of integers).
+   * @param {function(Object,Object)} callback An optional callback that receives 2 parameters. The first
+   * one is the error object (null if no error), and the second is the value if the request succeeded.
+   * @return {Object} Null if a callback is provided, a `Promise` object otherwise
+   */
+  Constr.prototype.removeTracksFromPlaylist = function(playlistId, uris, callback) {
+    var dataToBeSent = uris.map(function(uri) {
+      if (typeof uri === 'string') {
+        return { uri: uri };
+      } else {
+        return uri;
+      }
+    });
+
+    var requestData = {
+      url: _baseUri + '/playlists/' + playlistId + '/tracks',
+      type: 'DELETE',
+      postData: { tracks: dataToBeSent }
+    };
+    return _checkParamsAndPerformRequest(requestData, {}, callback);
+  };
+
+  /**
+   * Remove tracks from a playlist, specifying a snapshot id.
+   * See [Remove Tracks from a Playlist](https://developer.spotify.com/web-api/remove-tracks-playlist/) on
+   * the Spotify Developer site for more information about the endpoint.
+   *
+   * @param {string} playlistId The id of the playlist. If you know the Spotify URI it is easy
+   * to find the playlist id (e.g. spotify:user:xxxx:playlist:<here_is_the_playlist_id>)
+   * @param {Array<Object>} uris An array of tracks to be removed. Each element of the array can be either a
+   * string, in which case it is treated as a URI, or an object containing the properties `uri` (which is a
+   * string) and `positions` (which is an array of integers).
+   * @param {string} snapshotId The playlist's snapshot ID against which you want to make the changes
+   * @param {function(Object,Object)} callback An optional callback that receives 2 parameters. The first
+   * one is the error object (null if no error), and the second is the value if the request succeeded.
+   * @return {Object} Null if a callback is provided, a `Promise` object otherwise
+   */
+  Constr.prototype.removeTracksFromPlaylistWithSnapshotId = function(playlistId, uris, snapshotId, callback) {
+    var dataToBeSent = uris.map(function(uri) {
+      if (typeof uri === 'string') {
+        return { uri: uri };
+      } else {
+        return uri;
+      }
+    });
+    /* eslint-disable camelcase */
+    var requestData = {
+      url: _baseUri + '/playlists/' + playlistId + '/tracks',
+      type: 'DELETE',
+      postData: {
+        tracks: dataToBeSent,
+        snapshot_id: snapshotId
+      }
+    };
+    /* eslint-enable camelcase */
+    return _checkParamsAndPerformRequest(requestData, {}, callback);
+  };
+
+  /**
+   * Remove tracks from a playlist, specifying the positions of the tracks to be removed.
+   * See [Remove Tracks from a Playlist](https://developer.spotify.com/web-api/remove-tracks-playlist/) on
+   * the Spotify Developer site for more information about the endpoint.
+   *
+   * @param {string} playlistId The id of the playlist. If you know the Spotify URI it is easy
+   * to find the playlist id (e.g. spotify:user:xxxx:playlist:<here_is_the_playlist_id>)
+   * @param {Array<number>} positions array of integers containing the positions of the tracks to remove
+   * from the playlist.
+   * @param {string} snapshotId The playlist's snapshot ID against which you want to make the changes
+   * @param {function(Object,Object)} callback An optional callback that receives 2 parameters. The first
+   * one is the error object (null if no error), and the second is the value if the request succeeded.
+   * @return {Object} Null if a callback is provided, a `Promise` object otherwise
+   */
+  Constr.prototype.removeTracksFromPlaylistInPositions = function(playlistId, positions, snapshotId, callback) {
+    /* eslint-disable camelcase */
+    var requestData = {
+      url: _baseUri + '/playlists/' + playlistId + '/tracks',
+      type: 'DELETE',
+      postData: {
+        positions: positions,
+        snapshot_id: snapshotId
+      }
+    };
+    /* eslint-enable camelcase */
+    return _checkParamsAndPerformRequest(requestData, {}, callback);
+  };
+
+  /**
+   * Upload a custom playlist cover image.
+   * See [Upload A Custom Playlist Cover Image](https://developer.spotify.com/web-api/upload-a-custom-playlist-cover-image/) on
+   * the Spotify Developer site for more information about the endpoint.
+   *
+   * @param {string} playlistId The id of the playlist. If you know the Spotify URI it is easy
+   * to find the playlist id (e.g. spotify:user:xxxx:playlist:<here_is_the_playlist_id>)
+   * @param {string} imageData Base64 encoded JPEG image data, maximum payload size is 256 KB.
+   * @param {function(Object,Object)} callback An optional callback that receives 2 parameters. The first
+   * one is the error object (null if no error), and the second is the value if the request succeeded.
+   * @return {Object} Null if a callback is provided, a `Promise` object otherwise
+   */
+  Constr.prototype.uploadCustomPlaylistCoverImage = function(playlistId, imageData, callback) {
+    var requestData = {
+      url: _baseUri + '/playlists/' + playlistId + '/images',
+      type: 'PUT',
+      postData: imageData.replace(/^data:image\/jpeg;base64,/, ''),
+      contentType: 'image/jpeg'
+    };
+    return _checkParamsAndPerformRequest(requestData, {}, callback);
+  };
+
+  /**
+   * Fetches an album from the Spotify catalog.
+   * See [Get an Album](https://developer.spotify.com/web-api/get-album/) on
+   * the Spotify Developer site for more information about the endpoint.
+   *
+   * @param {string} albumId The id of the album. If you know the Spotify URI it is easy
+   * to find the album id (e.g. spotify:album:<here_is_the_album_id>)
+   * @param {Object} options A JSON object with options that can be passed
+   * @param {function(Object,Object)} callback An optional callback that receives 2 parameters. The first
+   * one is the error object (null if no error), and the second is the value if the request succeeded.
+   * @return {Object} Null if a callback is provided, a `Promise` object otherwise
+   */
+  Constr.prototype.getAlbum = function(albumId, options, callback) {
+    var requestData = {
+      url: _baseUri + '/albums/' + albumId
+    };
+    return _checkParamsAndPerformRequest(requestData, options, callback);
+  };
+
+  /**
+   * Fetches the tracks of an album from the Spotify catalog.
+   * See [Get an Album's Tracks](https://developer.spotify.com/web-api/get-albums-tracks/) on
+   * the Spotify Developer site for more information about the endpoint.
+   *
+   * @param {string} albumId The id of the album. If you know the Spotify URI it is easy
+   * to find the album id (e.g. spotify:album:<here_is_the_album_id>)
+   * @param {Object} options A JSON object with options that can be passed
+   * @param {function(Object,Object)} callback An optional callback that receives 2 parameters. The first
+   * one is the error object (null if no error), and the second is the value if the request succeeded.
+   * @return {Object} Null if a callback is provided, a `Promise` object otherwise
+   */
+  Constr.prototype.getAlbumTracks = function(albumId, options, callback) {
+    var requestData = {
+      url: _baseUri + '/albums/' + albumId + '/tracks'
+    };
+    return _checkParamsAndPerformRequest(requestData, options, callback);
+  };
+
+  /**
+   * Fetches multiple albums from the Spotify catalog.
+   * See [Get Several Albums](https://developer.spotify.com/web-api/get-several-albums/) on
+   * the Spotify Developer site for more information about the endpoint.
+   *
+   * @param {Array<string>} albumIds The ids of the albums. If you know their Spotify URI it is easy
+   * to find their album id (e.g. spotify:album:<here_is_the_album_id>)
+   * @param {Object} options A JSON object with options that can be passed
+   * @param {function(Object,Object)} callback An optional callback that receives 2 parameters. The first
+   * one is the error object (null if no error), and the second is the value if the request succeeded.
+   * @return {Object} Null if a callback is provided, a `Promise` object otherwise
+   */
+  Constr.prototype.getAlbums = function(albumIds, options, callback) {
+    var requestData = {
+      url: _baseUri + '/albums/',
+      params: { ids: albumIds.join(',') }
+    };
+    return _checkParamsAndPerformRequest(requestData, options, callback);
+  };
+
+  /**
+   * Fetches a track from the Spotify catalog.
+   * See [Get a Track](https://developer.spotify.com/web-api/get-track/) on
+   * the Spotify Developer site for more information about the endpoint.
+   *
+   * @param {string} trackId The id of the track. If you know the Spotify URI it is easy
+   * to find the track id (e.g. spotify:track:<here_is_the_track_id>)
+   * @param {Object} options A JSON object with options that can be passed
+   * @param {function(Object,Object)} callback An optional callback that receives 2 parameters. The first
+   * one is the error object (null if no error), and the second is the value if the request succeeded.
+   * @return {Object} Null if a callback is provided, a `Promise` object otherwise
+   */
+  Constr.prototype.getTrack = function(trackId, options, callback) {
+    var requestData = {};
+    requestData.url = _baseUri + '/tracks/' + trackId;
+    return _checkParamsAndPerformRequest(requestData, options, callback);
+  };
+
+  /**
+   * Fetches multiple tracks from the Spotify catalog.
+   * See [Get Several Tracks](https://developer.spotify.com/web-api/get-several-tracks/) on
+   * the Spotify Developer site for more information about the endpoint.
+   *
+   * @param {Array<string>} trackIds The ids of the tracks. If you know their Spotify URI it is easy
+   * to find their track id (e.g. spotify:track:<here_is_the_track_id>)
+   * @param {Object} options A JSON object with options that can be passed
+   * @param {function(Object,Object)} callback An optional callback that receives 2 parameters. The first
+   * one is the error object (null if no error), and the second is the value if the request succeeded.
+   * @return {Object} Null if a callback is provided, a `Promise` object otherwise
+   */
+  Constr.prototype.getTracks = function(trackIds, options, callback) {
+    var requestData = {
+      url: _baseUri + '/tracks/',
+      params: { ids: trackIds.join(',') }
+    };
+    return _checkParamsAndPerformRequest(requestData, options, callback);
+  };
+
+  /**
+   * Fetches an artist from the Spotify catalog.
+   * See [Get an Artist](https://developer.spotify.com/web-api/get-artist/) on
+   * the Spotify Developer site for more information about the endpoint.
+   *
+   * @param {string} artistId The id of the artist. If you know the Spotify URI it is easy
+   * to find the artist id (e.g. spotify:artist:<here_is_the_artist_id>)
+   * @param {Object} options A JSON object with options that can be passed
+   * @param {function(Object,Object)} callback An optional callback that receives 2 parameters. The first
+   * one is the error object (null if no error), and the second is the value if the request succeeded.
+   * @return {Object} Null if a callback is provided, a `Promise` object otherwise
+   */
+  Constr.prototype.getArtist = function(artistId, options, callback) {
+    var requestData = {
+      url: _baseUri + '/artists/' + artistId
+    };
+    return _checkParamsAndPerformRequest(requestData, options, callback);
+  };
+
+  /**
+   * Fetches multiple artists from the Spotify catalog.
+   * See [Get Several Artists](https://developer.spotify.com/web-api/get-several-artists/) on
+   * the Spotify Developer site for more information about the endpoint.
+   *
+   * @param {Array<string>} artistIds The ids of the artists. If you know their Spotify URI it is easy
+   * to find their artist id (e.g. spotify:artist:<here_is_the_artist_id>)
+   * @param {Object} options A JSON object with options that can be passed
+   * @param {function(Object,Object)} callback An optional callback that receives 2 parameters. The first
+   * one is the error object (null if no error), and the second is the value if the request succeeded.
+   * @return {Object} Null if a callback is provided, a `Promise` object otherwise
+   */
+  Constr.prototype.getArtists = function(artistIds, options, callback) {
+    var requestData = {
+      url: _baseUri + '/artists/',
+      params: { ids: artistIds.join(',') }
+    };
+    return _checkParamsAndPerformRequest(requestData, options, callback);
+  };
+
+  /**
+   * Fetches the albums of an artist from the Spotify catalog.
+   * See [Get an Artist's Albums](https://developer.spotify.com/web-api/get-artists-albums/) on
+   * the Spotify Developer site for more information about the endpoint.
+   *
+   * @param {string} artistId The id of the artist. If you know the Spotify URI it is easy
+   * to find the artist id (e.g. spotify:artist:<here_is_the_artist_id>)
+   * @param {Object} options A JSON object with options that can be passed
+   * @param {function(Object,Object)} callback An optional callback that receives 2 parameters. The first
+   * one is the error object (null if no error), and the second is the value if the request succeeded.
+   * @return {Object} Null if a callback is provided, a `Promise` object otherwise
+   */
+  Constr.prototype.getArtistAlbums = function(artistId, options, callback) {
+    var requestData = {
+      url: _baseUri + '/artists/' + artistId + '/albums'
+    };
+    return _checkParamsAndPerformRequest(requestData, options, callback);
+  };
+
+  /**
+   * Fetches a list of top tracks of an artist from the Spotify catalog, for a specific country.
+   * See [Get an Artist's Top Tracks](https://developer.spotify.com/web-api/get-artists-top-tracks/) on
+   * the Spotify Developer site for more information about the endpoint.
+   *
+   * @param {string} artistId The id of the artist. If you know the Spotify URI it is easy
+   * to find the artist id (e.g. spotify:artist:<here_is_the_artist_id>)
+   * @param {string} countryId The id of the country (e.g. ES for Spain or US for United States)
+   * @param {Object} options A JSON object with options that can be passed
+   * @param {function(Object,Object)} callback An optional callback that receives 2 parameters. The first
+   * one is the error object (null if no error), and the second is the value if the request succeeded.
+   * @return {Object} Null if a callback is provided, a `Promise` object otherwise
+   */
+  Constr.prototype.getArtistTopTracks = function(artistId, countryId, options, callback) {
+    var requestData = {
+      url: _baseUri + '/artists/' + artistId + '/top-tracks',
+      params: { country: countryId }
+    };
+    return _checkParamsAndPerformRequest(requestData, options, callback);
+  };
+
+  /**
+   * Fetches a list of artists related with a given one from the Spotify catalog.
+   * See [Get an Artist's Related Artists](https://developer.spotify.com/web-api/get-related-artists/) on
+   * the Spotify Developer site for more information about the endpoint.
+   *
+   * @param {string} artistId The id of the artist. If you know the Spotify URI it is easy
+   * to find the artist id (e.g. spotify:artist:<here_is_the_artist_id>)
+   * @param {Object} options A JSON object with options that can be passed
+   * @param {function(Object,Object)} callback An optional callback that receives 2 parameters. The first
+   * one is the error object (null if no error), and the second is the value if the request succeeded.
+   * @return {Object} Null if a callback is provided, a `Promise` object otherwise
+   */
+  Constr.prototype.getArtistRelatedArtists = function(artistId, options, callback) {
+    var requestData = {
+      url: _baseUri + '/artists/' + artistId + '/related-artists'
+    };
+    return _checkParamsAndPerformRequest(requestData, options, callback);
+  };
+
+  /**
+   * Fetches a list of Spotify featured playlists (shown, for example, on a Spotify player's "Browse" tab).
+   * See [Get a List of Featured Playlists](https://developer.spotify.com/web-api/get-list-featured-playlists/) on
+   * the Spotify Developer site for more information about the endpoint.
+   *
+   * @param {Object} options A JSON object with options that can be passed
+   * @param {function(Object,Object)} callback An optional callback that receives 2 parameters. The first
+   * one is the error object (null if no error), and the second is the value if the request succeeded.
+   * @return {Object} Null if a callback is provided, a `Promise` object otherwise
+   */
+  Constr.prototype.getFeaturedPlaylists = function(options, callback) {
+    var requestData = {
+      url: _baseUri + '/browse/featured-playlists'
+    };
+    return _checkParamsAndPerformRequest(requestData, options, callback);
+  };
+
+  /**
+   * Fetches a list of new album releases featured in Spotify (shown, for example, on a Spotify player's "Browse" tab).
+   * See [Get a List of New Releases](https://developer.spotify.com/web-api/get-list-new-releases/) on
+   * the Spotify Developer site for more information about the endpoint.
+   *
+   * @param {Object} options A JSON object with options that can be passed
+   * @param {function(Object,Object)} callback An optional callback that receives 2 parameters. The first
+   * one is the error object (null if no error), and the second is the value if the request succeeded.
+   * @return {Object} Null if a callback is provided, a `Promise` object otherwise
+   */
+  Constr.prototype.getNewReleases = function(options, callback) {
+    var requestData = {
+      url: _baseUri + '/browse/new-releases'
+    };
+    return _checkParamsAndPerformRequest(requestData, options, callback);
+  };
+
+  /**
+   * Get a list of categories used to tag items in Spotify (on, for example, the Spotify player's "Browse" tab).
+   * See [Get a List of Categories](https://developer.spotify.com/web-api/get-list-categories/) on
+   * the Spotify Developer site for more information about the endpoint.
+   *
+   * @param {Object} options A JSON object with options that can be passed
+   * @param {function(Object,Object)} callback An optional callback that receives 2 parameters. The first
+   * one is the error object (null if no error), and the second is the value if the request succeeded.
+   * @return {Object} Null if a callback is provided, a `Promise` object otherwise
+   */
+  Constr.prototype.getCategories = function(options, callback) {
+    var requestData = {
+      url: _baseUri + '/browse/categories'
+    };
+    return _checkParamsAndPerformRequest(requestData, options, callback);
+  };
+
+  /**
+   * Get a single category used to tag items in Spotify (on, for example, the Spotify player's "Browse" tab).
+   * See [Get a Category](https://developer.spotify.com/web-api/get-category/) on
+   * the Spotify Developer site for more information about the endpoint.
+   *
+   * @param {string} categoryId The id of the category. These can be found with the getCategories function
+   * @param {Object} options A JSON object with options that can be passed
+   * @param {function(Object,Object)} callback An optional callback that receives 2 parameters. The first
+   * one is the error object (null if no error), and the second is the value if the request succeeded.
+   * @return {Object} Null if a callback is provided, a `Promise` object otherwise
+   */
+  Constr.prototype.getCategory = function(categoryId, options, callback) {
+    var requestData = {
+      url: _baseUri + '/browse/categories/' + categoryId
+    };
+    return _checkParamsAndPerformRequest(requestData, options, callback);
+  };
+
+  /**
+   * Get a list of Spotify playlists tagged with a particular category.
+   * See [Get a Category's Playlists](https://developer.spotify.com/web-api/get-categorys-playlists/) on
+   * the Spotify Developer site for more information about the endpoint.
+   *
+   * @param {string} categoryId The id of the category. These can be found with the getCategories function
+   * @param {Object} options A JSON object with options that can be passed
+   * @param {function(Object,Object)} callback An optional callback that receives 2 parameters. The first
+   * one is the error object (null if no error), and the second is the value if the request succeeded.
+   * @return {Object} Null if a callback is provided, a `Promise` object otherwise
+   */
+  Constr.prototype.getCategoryPlaylists = function(categoryId, options, callback) {
+    var requestData = {
+      url: _baseUri + '/browse/categories/' + categoryId + '/playlists'
+    };
+    return _checkParamsAndPerformRequest(requestData, options, callback);
+  };
+
+  /**
+   * Get Spotify catalog information about artists, albums, tracks or playlists that match a keyword string.
+   * See [Search for an Item](https://developer.spotify.com/web-api/search-item/) on
+   * the Spotify Developer site for more information about the endpoint.
+   *
+   * @param {string} query The search query
+   * @param {Array<string>} types An array of item types to search across.
+   * Valid types are: 'album', 'artist', 'playlist', and 'track'.
+   * @param {Object} options A JSON object with options that can be passed
+   * @param {function(Object,Object)} callback An optional callback that receives 2 parameters. The first
+   * one is the error object (null if no error), and the second is the value if the request succeeded.
+   * @return {Object} Null if a callback is provided, a `Promise` object otherwise
+   */
+  Constr.prototype.search = function(query, types, options, callback) {
+    var requestData = {
+      url: _baseUri + '/search/',
+      params: {
+        q: query,
+        type: types.join(',')
+      }
+    };
+    return _checkParamsAndPerformRequest(requestData, options, callback);
+  };
+
+  /**
+   * Fetches albums from the Spotify catalog according to a query.
+   * See [Search for an Item](https://developer.spotify.com/web-api/search-item/) on
+   * the Spotify Developer site for more information about the endpoint.
+   *
+   * @param {string} query The search query
+   * @param {Object} options A JSON object with options that can be passed
+   * @param {function(Object,Object)} callback An optional callback that receives 2 parameters. The first
+   * one is the error object (null if no error), and the second is the value if the request succeeded.
+   * @return {Object} Null if a callback is provided, a `Promise` object otherwise
+   */
+  Constr.prototype.searchAlbums = function(query, options, callback) {
+    return this.search(query, ['album'], options, callback);
+  };
+
+  /**
+   * Fetches artists from the Spotify catalog according to a query.
+   * See [Search for an Item](https://developer.spotify.com/web-api/search-item/) on
+   * the Spotify Developer site for more information about the endpoint.
+   *
+   * @param {string} query The search query
+   * @param {Object} options A JSON object with options that can be passed
+   * @param {function(Object,Object)} callback An optional callback that receives 2 parameters. The first
+   * one is the error object (null if no error), and the second is the value if the request succeeded.
+   * @return {Object} Null if a callback is provided, a `Promise` object otherwise
+   */
+  Constr.prototype.searchArtists = function(query, options, callback) {
+    return this.search(query, ['artist'], options, callback);
+  };
+
+  /**
+   * Fetches tracks from the Spotify catalog according to a query.
+   * See [Search for an Item](https://developer.spotify.com/web-api/search-item/) on
+   * the Spotify Developer site for more information about the endpoint.
+   *
+   * @param {string} query The search query
+   * @param {Object} options A JSON object with options that can be passed
+   * @param {function(Object,Object)} callback An optional callback that receives 2 parameters. The first
+   * one is the error object (null if no error), and the second is the value if the request succeeded.
+   * @return {Object} Null if a callback is provided, a `Promise` object otherwise
+   */
+  Constr.prototype.searchTracks = function(query, options, callback) {
+    return this.search(query, ['track'], options, callback);
+  };
+
+  /**
+   * Fetches playlists from the Spotify catalog according to a query.
+   * See [Search for an Item](https://developer.spotify.com/web-api/search-item/) on
+   * the Spotify Developer site for more information about the endpoint.
+   *
+   * @param {string} query The search query
+   * @param {Object} options A JSON object with options that can be passed
+   * @param {function(Object,Object)} callback An optional callback that receives 2 parameters. The first
+   * one is the error object (null if no error), and the second is the value if the request succeeded.
+   * @return {Object} Null if a callback is provided, a `Promise` object otherwise
+   */
+  Constr.prototype.searchPlaylists = function(query, options, callback) {
+    return this.search(query, ['playlist'], options, callback);
+  };
+
+  /**
+   * Get audio features for a single track identified by its unique Spotify ID.
+   * See [Get Audio Features for a Track](https://developer.spotify.com/web-api/get-audio-features/) on
+   * the Spotify Developer site for more information about the endpoint.
+   *
+   * @param {string} trackId The id of the track. If you know the Spotify URI it is easy
+   * to find the track id (e.g. spotify:track:<here_is_the_track_id>)
+   * @param {function(Object,Object)} callback An optional callback that receives 2 parameters. The first
+   * one is the error object (null if no error), and the second is the value if the request succeeded.
+   * @return {Object} Null if a callback is provided, a `Promise` object otherwise
+   */
+  Constr.prototype.getAudioFeaturesForTrack = function(trackId, callback) {
+    var requestData = {};
+    requestData.url = _baseUri + '/audio-features/' + trackId;
+    return _checkParamsAndPerformRequest(requestData, {}, callback);
+  };
+
+  /**
+   * Get audio features for multiple tracks based on their Spotify IDs.
+   * See [Get Audio Features for Several Tracks](https://developer.spotify.com/web-api/get-several-audio-features/) on
+   * the Spotify Developer site for more information about the endpoint.
+   *
+   * @param {Array<string>} trackIds The ids of the tracks. If you know their Spotify URI it is easy
+   * to find their track id (e.g. spotify:track:<here_is_the_track_id>)
+   * @param {function(Object,Object)} callback An optional callback that receives 2 parameters. The first
+   * one is the error object (null if no error), and the second is the value if the request succeeded.
+   * @return {Object} Null if a callback is provided, a `Promise` object otherwise
+   */
+  Constr.prototype.getAudioFeaturesForTracks = function(trackIds, callback) {
+    var requestData = {
+      url: _baseUri + '/audio-features',
+      params: { ids: trackIds }
+    };
+    return _checkParamsAndPerformRequest(requestData, {}, callback);
+  };
+
+  /**
+   * Get audio analysis for a single track identified by its unique Spotify ID.
+   * See [Get Audio Analysis for a Track](https://developer.spotify.com/web-api/get-audio-analysis/) on
+   * the Spotify Developer site for more information about the endpoint.
+   *
+   * @param {string} trackId The id of the track. If you know the Spotify URI it is easy
+   * to find the track id (e.g. spotify:track:<here_is_the_track_id>)
+   * @param {function(Object,Object)} callback An optional callback that receives 2 parameters. The first
+   * one is the error object (null if no error), and the second is the value if the request succeeded.
+   * @return {Object} Null if a callback is provided, a `Promise` object otherwise
+   */
+  Constr.prototype.getAudioAnalysisForTrack = function(trackId, callback) {
+    var requestData = {};
+    requestData.url = _baseUri + '/audio-analysis/' + trackId;
+    return _checkParamsAndPerformRequest(requestData, {}, callback);
+  };
+
+  /**
+   * Create a playlist-style listening experience based on seed artists, tracks and genres.
+   * See [Get Recommendations Based on Seeds](https://developer.spotify.com/web-api/get-recommendations/) on
+   * the Spotify Developer site for more information about the endpoint.
+   *
+   * @param {Object} options A JSON object with options that can be passed
+   * @param {function(Object,Object)} callback An optional callback that receives 2 parameters. The first
+   * one is the error object (null if no error), and the second is the value if the request succeeded.
+   * @return {Object} Null if a callback is provided, a `Promise` object otherwise
+   */
+  Constr.prototype.getRecommendations = function(options, callback) {
+    var requestData = {
+      url: _baseUri + '/recommendations'
+    };
+    return _checkParamsAndPerformRequest(requestData, options, callback);
+  };
+
+  /**
+   * Retrieve a list of available genres seed parameter values for recommendations.
+   * See [Available Genre Seeds](https://developer.spotify.com/web-api/get-recommendations/#available-genre-seeds) on
+   * the Spotify Developer site for more information about the endpoint.
+   *
+   * @param {function(Object,Object)} callback An optional callback that receives 2 parameters. The first
+   * one is the error object (null if no error), and the second is the value if the request succeeded.
+   * @return {Object} Null if a callback is provided, a `Promise` object otherwise
+   */
+  Constr.prototype.getAvailableGenreSeeds = function(callback) {
+    var requestData = {
+      url: _baseUri + '/recommendations/available-genre-seeds'
+    };
+    return _checkParamsAndPerformRequest(requestData, {}, callback);
+  };
+
+  /**
+   * Get information about a user’s available devices.
+   * See [Get a User’s Available Devices](https://developer.spotify.com/web-api/get-a-users-available-devices/) on
+   * the Spotify Developer site for more information about the endpoint.
+   *
+   * @param {function(Object,Object)} callback An optional callback that receives 2 parameters. The first
+   * one is the error object (null if no error), and the second is the value if the request succeeded.
+   * @return {Object} Null if a callback is provided, a `Promise` object otherwise
+   */
+  Constr.prototype.getMyDevices = function(callback) {
+    var requestData = {
+      url: _baseUri + '/me/player/devices'
+    };
+    return _checkParamsAndPerformRequest(requestData, {}, callback);
+  };
+
+  /**
+   * Get information about the user’s current playback state, including track, track progress, and active device.
+   * See [Get Information About The User’s Current Playback](https://developer.spotify.com/web-api/get-information-about-the-users-current-playback/) on
+   * the Spotify Developer site for more information about the endpoint.
+   *
+   * @param {Object} options A JSON object with options that can be passed.
+   * @param {function(Object,Object)} callback An optional callback that receives 2 parameters. The first
+   * one is the error object (null if no error), and the second is the value if the request succeeded.
+   * @return {Object} Null if a callback is provided, a `Promise` object otherwise
+   */
+  Constr.prototype.getMyCurrentPlaybackState = function(options, callback) {
+    var requestData = {
+      url: _baseUri + '/me/player'
+    };
+    return _checkParamsAndPerformRequest(requestData, options, callback);
+  };
+
+  /**
+   * Get the object currently being played on the user’s Spotify account.
+   * See [Get the User’s Currently Playing Track](https://developer.spotify.com/web-api/get-the-users-currently-playing-track/) on
+   * the Spotify Developer site for more information about the endpoint.
+   *
+   * @param {Object} options A JSON object with options that can be passed.
+   * @param {function(Object,Object)} callback An optional callback that receives 2 parameters. The first
+   * one is the error object (null if no error), and the second is the value if the request succeeded.
+   * @return {Object} Null if a callback is provided, a `Promise` object otherwise
+   */
+  Constr.prototype.getMyCurrentPlayingTrack = function(options, callback) {
+    var requestData = {
+      url: _baseUri + '/me/player/currently-playing'
+    };
+    return _checkParamsAndPerformRequest(requestData, options, callback);
+  };
+
+  /**
+   * Transfer playback to a new device and determine if it should start playing.
+   * See [Transfer a User’s Playback](https://developer.spotify.com/web-api/transfer-a-users-playback/) on
+   * the Spotify Developer site for more information about the endpoint.
+   *
+   * @param {Array<string>} deviceIds A JSON array containing the ID of the device on which playback should be started/transferred.
+   * @param {Object} options A JSON object with options that can be passed.
+   * @param {function(Object,Object)} callback An optional callback that receives 2 parameters. The first
+   * one is the error object (null if no error), and the second is the value if the request succeeded.
+   * @return {Object} Null if a callback is provided, a `Promise` object otherwise
+   */
+  Constr.prototype.transferMyPlayback = function(deviceIds, options, callback) {
+    var postData = options || {};
+    postData.device_ids = deviceIds;
+    var requestData = {
+      type: 'PUT',
+      url: _baseUri + '/me/player',
+      postData: postData
+    };
+    return _checkParamsAndPerformRequest(requestData, options, callback);
+  };
+
+  /**
+   * Start a new context or resume current playback on the user’s active device.
+   * See [Start/Resume a User’s Playback](https://developer.spotify.com/web-api/start-a-users-playback/) on
+   * the Spotify Developer site for more information about the endpoint.
+   *
+   * @param {Object} options A JSON object with options that can be passed.
+   * @param {function(Object,Object)} callback An optional callback that receives 2 parameters. The first
+   * one is the error object (null if no error), and the second is the value if the request succeeded.
+   * @return {Object} Null if a callback is provided, a `Promise` object otherwise
+   */
+  Constr.prototype.play = function(options, callback) {
+    options = options || {};
+    var params = 'device_id' in options ? {device_id: options.device_id} : null;
+    var postData = {};
+    ['context_uri', 'uris', 'offset', 'position_ms'].forEach(function(field) {
+      if (field in options) {
+        postData[field] = options[field];
+      }
+    });
+    var requestData = {
+      type: 'PUT',
+      url: _baseUri + '/me/player/play',
+      params: params,
+      postData: postData
+    };
+
+    // need to clear options so it doesn't add all of them to the query params
+    var newOptions = typeof options === 'function' ? options : {};
+    return _checkParamsAndPerformRequest(requestData, newOptions, callback);
+  };
+
+  /**
+   * Pause playback on the user’s account.
+   * See [Pause a User’s Playback](https://developer.spotify.com/web-api/pause-a-users-playback/) on
+   * the Spotify Developer site for more information about the endpoint.
+   *
+   * @param {Object} options A JSON object with options that can be passed.
+   * @param {function(Object,Object)} callback An optional callback that receives 2 parameters. The first
+   * one is the error object (null if no error), and the second is the value if the request succeeded.
+   * @return {Object} Null if a callback is provided, a `Promise` object otherwise
+   */
+  Constr.prototype.pause = function(options, callback) {
+    options = options || {};
+    var params = 'device_id' in options ? {device_id: options.device_id} : null;
+    var requestData = {
+      type: 'PUT',
+      url: _baseUri + '/me/player/pause',
+      params: params
+    };
+    return _checkParamsAndPerformRequest(requestData, options, callback);
+  };
+
+  /**
+   * Skips to next track in the user’s queue.
+   * See [Skip User’s Playback To Next Track](https://developer.spotify.com/web-api/skip-users-playback-to-next-track/) on
+   * the Spotify Developer site for more information about the endpoint.
+   *
+   * @param {Object} options A JSON object with options that can be passed.
+   * @param {function(Object,Object)} callback An optional callback that receives 2 parameters. The first
+   * one is the error object (null if no error), and the second is the value if the request succeeded.
+   * @return {Object} Null if a callback is provided, a `Promise` object otherwise
+   */
+  Constr.prototype.skipToNext = function(options, callback) {
+    options = options || {};
+    var params = 'device_id' in options ? {device_id: options.device_id} : null;
+    var requestData = {
+      type: 'POST',
+      url: _baseUri + '/me/player/next',
+      params: params
+    };
+    return _checkParamsAndPerformRequest(requestData, options, callback);
+  };
+
+  /**
+   * Skips to previous track in the user’s queue.
+   * Note that this will ALWAYS skip to the previous track, regardless of the current track’s progress.
+   * Returning to the start of the current track should be performed using `.seek()`
+   * See [Skip User’s Playback To Previous Track](https://developer.spotify.com/web-api/skip-users-playback-to-next-track/) on
+   * the Spotify Developer site for more information about the endpoint.
+   *
+   * @param {Object} options A JSON object with options that can be passed.
+   * @param {function(Object,Object)} callback An optional callback that receives 2 parameters. The first
+   * one is the error object (null if no error), and the second is the value if the request succeeded.
+   * @return {Object} Null if a callback is provided, a `Promise` object otherwise
+   */
+  Constr.prototype.skipToPrevious = function(options, callback) {
+    options = options || {};
+    var params = 'device_id' in options ? {device_id: options.device_id} : null;
+    var requestData = {
+      type: 'POST',
+      url: _baseUri + '/me/player/previous',
+      params: params
+    };
+    return _checkParamsAndPerformRequest(requestData, options, callback);
+  };
+
+  /**
+   * Seeks to the given position in the user’s currently playing track.
+   * See [Seek To Position In Currently Playing Track](https://developer.spotify.com/web-api/seek-to-position-in-currently-playing-track/) on
+   * the Spotify Developer site for more information about the endpoint.
+   *
+   * @param {number} position_ms The position in milliseconds to seek to. Must be a positive number.
+   * @param {Object} options A JSON object with options that can be passed.
+   * @param {function(Object,Object)} callback An optional callback that receives 2 parameters. The first
+   * one is the error object (null if no error), and the second is the value if the request succeeded.
+   * @return {Object} Null if a callback is provided, a `Promise` object otherwise
+   */
+  Constr.prototype.seek = function(position_ms, options, callback) {
+    options = options || {};
+    var params = {
+      position_ms: position_ms
+    };
+    if ('device_id' in options) {
+      params.device_id = options.device_id;
+    }
+    var requestData = {
+      type: 'PUT',
+      url: _baseUri + '/me/player/seek',
+      params: params
+    };
+    return _checkParamsAndPerformRequest(requestData, options, callback);
+  };
+
+  /**
+   * Set the repeat mode for the user’s playback. Options are repeat-track, repeat-context, and off.
+   * See [Set Repeat Mode On User’s Playback](https://developer.spotify.com/web-api/set-repeat-mode-on-users-playback/) on
+   * the Spotify Developer site for more information about the endpoint.
+   *
+   * @param {String} state A string set to 'track', 'context' or 'off'.
+   * @param {Object} options A JSON object with options that can be passed.
+   * @param {function(Object,Object)} callback An optional callback that receives 2 parameters. The first
+   * one is the error object (null if no error), and the second is the value if the request succeeded.
+   * @return {Object} Null if a callback is provided, a `Promise` object otherwise
+   */
+  Constr.prototype.setRepeat = function(state, options, callback) {
+    options = options || {};
+    var params = {
+      state: state
+    };
+    if ('device_id' in options) {
+      params.device_id = options.device_id;
+    }
+    var requestData = {
+      type: 'PUT',
+      url: _baseUri + '/me/player/repeat',
+      params: params
+    };
+    return _checkParamsAndPerformRequest(requestData, options, callback);
+  };
+
+  /**
+   * Set the volume for the user’s current playback device.
+   * See [Set Volume For User’s Playback](https://developer.spotify.com/web-api/set-volume-for-users-playback/) on
+   * the Spotify Developer site for more information about the endpoint.
+   *
+   * @param {number} volume_percent The volume to set. Must be a value from 0 to 100 inclusive.
+   * @param {Object} options A JSON object with options that can be passed.
+   * @param {function(Object,Object)} callback An optional callback that receives 2 parameters. The first
+   * one is the error object (null if no error), and the second is the value if the request succeeded.
+   * @return {Object} Null if a callback is provided, a `Promise` object otherwise
+   */
+  Constr.prototype.setVolume = function(volume_percent, options, callback) {
+    options = options || {};
+    var params = {
+      volume_percent: volume_percent
+    };
+    if ('device_id' in options) {
+      params.device_id = options.device_id;
+    }
+    var requestData = {
+      type: 'PUT',
+      url: _baseUri + '/me/player/volume',
+      params: params
+    };
+    return _checkParamsAndPerformRequest(requestData, options, callback);
+  };
+
+  /**
+   * Toggle shuffle on or off for user’s playback.
+   * See [Toggle Shuffle For User’s Playback](https://developer.spotify.com/web-api/toggle-shuffle-for-users-playback/) on
+   * the Spotify Developer site for more information about the endpoint.
+   *
+   * @param {bool} state Whether or not to shuffle user's playback.
+   * @param {Object} options A JSON object with options that can be passed.
+   * @param {function(Object,Object)} callback An optional callback that receives 2 parameters. The first
+   * one is the error object (null if no error), and the second is the value if the request succeeded.
+   * @return {Object} Null if a callback is provided, a `Promise` object otherwise
+   */
+  Constr.prototype.setShuffle = function(state, options, callback) {
+    options = options || {};
+    var params = {
+      state: state
+    };
+    if ('device_id' in options) {
+      params.device_id = options.device_id;
+    }
+    var requestData = {
+      type: 'PUT',
+      url: _baseUri + '/me/player/shuffle',
+      params: params
+    };
+    return _checkParamsAndPerformRequest(requestData, options, callback);
+  };
+
+  /**
+   * Gets the access token in use.
+   *
+   * @return {string} accessToken The access token
+   */
+  Constr.prototype.getAccessToken = function() {
+    return _accessToken;
+  };
+
+  /**
+   * Sets the access token to be used.
+   * See [the Authorization Guide](https://developer.spotify.com/web-api/authorization-guide/) on
+   * the Spotify Developer site for more information about obtaining an access token.
+   *
+   * @param {string} accessToken The access token
+   * @return {void}
+   */
+  Constr.prototype.setAccessToken = function(accessToken) {
+    _accessToken = accessToken;
+  };
+
+  /**
+   * Sets an implementation of Promises/A+ to be used. E.g. Q, when.
+   * See [Conformant Implementations](https://github.com/promises-aplus/promises-spec/blob/master/implementations.md)
+   * for a list of some available options
+   *
+   * @param {Object} PromiseImplementation A Promises/A+ valid implementation
+   * @throws {Error} If the implementation being set doesn't conform with Promises/A+
+   * @return {void}
+   */
+  Constr.prototype.setPromiseImplementation = function(PromiseImplementation) {
+    var valid = false;
+    try {
+      var p = new PromiseImplementation(function(resolve) {
+        resolve();
+      });
+      if (typeof p.then === 'function' && typeof p.catch === 'function') {
+        valid = true;
+      }
+    } catch (e) {
+      console.error(e);
+    }
+    if (valid) {
+      _promiseImplementation = PromiseImplementation;
+    } else {
+      throw new Error('Unsupported implementation of Promises/A+');
+    }
+  };
+
+  return Constr;
+})();
+
+if (typeof module === 'object' && typeof module.exports === 'object') {
+  module.exports = SpotifyWebApi;
+}
