@@ -2184,14 +2184,16 @@ function history()
       track_ids.push(value.items[i].track.id);
     }
   });
-  for (let j = 0; j < track_ids.length; j++)
-  {
-    let response2 = spotifyApi.getAudioFeaturesForTrack(track_ids[j]);
-    response2.then(function(value) {
-      afList.push(convertAF(value));
-    });
-  }
-  return afList;
+  setTimeout(function() {
+    for (let j = 0; j < track_ids.length; j++)
+    {
+      let response2 = spotifyApi.getAudioFeaturesForTrack(track_ids[j]);
+      response2.then(function(value) {
+        afList.push(convertAF(value));
+      });
+    }
+    return afList;
+  }, 5000);
 };
 
 function compare()
