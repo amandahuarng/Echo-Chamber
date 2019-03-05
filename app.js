@@ -2186,6 +2186,7 @@ function history()
   });
   for (let repeat = 0; repeat < 1000; repeat++)
   {}
+  console.log(track_ids);
   for (let j = 0; j < track_ids.length; j++)
   {
     let response2 = spotifyApi.getAudioFeaturesForTrack(track_ids[j]);
