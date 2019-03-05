@@ -2057,7 +2057,7 @@ function past_feature_data(feature_list)
 {
     let feature_stats = [[], []];
     const num_of_tracks = feature_list.length;
-    for (let i = 0; i < feature_list[0].length; i++)
+    for (let i = 0; i < 12; i++)
     {
         let average = 0;
         for (let j = 0; j < num_of_tracks; j++)
