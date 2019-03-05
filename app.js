@@ -2186,6 +2186,7 @@ function history()
   });
   for (let repeat = 0; repeat < 1000; repeat++)
   {}
+  // BUG TESTING ----------------------
   console.log(track_ids);
   for (let j = 0; j < track_ids.length; j++)
   {
@@ -2201,6 +2202,8 @@ function compare()
 {
   H = history();
   T = allTracks();
+  // BUG TESTING ----------------------
+  console.log(H);
   response1 = past_feature_data(H);
   response2 = similar_tracks(response1, T);
   return response2;
